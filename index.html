@@ -1,0 +1,2764 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>RedPen</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Chivo:wght@400;700;800&family=Karla:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+  }
+
+  :root {
+    --bg: #faf5f5;
+    --surface: #ffffff;
+    --surface-alt: #f5eded;
+    --border: #e8d5d5;
+    --border-focus: #8c2040;
+    --text-primary: #2a1218;
+    --text-secondary: #5c3a42;
+    --text-tertiary: #9a7078;
+    --accent: #c42348;
+    --accent-hover: #a81d3d;
+    --accent-text: #ffffff;
+    --success: #2d6a4f;
+    --success-bg: #e8f5f0;
+    --warning: #9a6700;
+    --warning-bg: #fef3e2;
+    --radius-sm: 6px;
+    --radius-md: 10px;
+    --radius-lg: 16px;
+    --shadow-sm: 0 1px 3px rgba(42,18,24,0.06);
+    --shadow-md: 0 4px 12px rgba(42,18,24,0.08);
+    --font-heading: 'Chivo', -apple-system, BlinkMacSystemFont, sans-serif;
+    --font-body: 'Karla', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+    --font-mono: 'SF Mono', 'Fira Code', 'Cascadia Code', monospace;
+    --max-width: 720px;
+  }
+
+  html {
+    font-size: 16px;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  body {
+    font-family: var(--font-body);
+    background: var(--bg);
+    color: var(--text-primary);
+    line-height: 1.6;
+    min-height: 100vh;
+  }
+
+  h1, h2, h3, h4 {
+    font-family: var(--font-heading);
+  }
+
+  .container {
+    max-width: var(--max-width);
+    margin: 0 auto;
+    padding: 40px 24px 80px;
+  }
+
+  header {
+    text-align: center;
+    margin-bottom: 48px;
+    padding-top: 24px;
+  }
+
+  .logo {
+    display: inline-flex;
+    align-items: center;
+    margin-bottom: 12px;
+  }
+
+  .logo-svg {
+    height: 48px;
+    width: auto;
+    color: var(--text-primary);
+  }
+
+  .tagline {
+    font-size: 16px;
+    color: var(--text-secondary);
+    max-width: 440px;
+    margin: 0 auto;
+  }
+
+  .backend-status {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 14px;
+    font-size: 13px;
+    color: var(--text-secondary);
+  }
+
+  .status-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--text-tertiary);
+    flex-shrink: 0;
+  }
+
+  .status-dot.online {
+    background: var(--success);
+  }
+
+  .status-dot.offline {
+    background: #c42348;
+  }
+
+  .delta-panel {
+    margin-top: 20px;
+    padding: 16px 20px;
+    background: var(--surface-alt);
+    border-radius: var(--radius-md);
+  }
+
+  .delta-title {
+    font-size: 14px;
+    font-weight: 600;
+    margin-bottom: 12px;
+  }
+
+  .delta-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 6px 0;
+    font-size: 13px;
+    color: var(--text-secondary);
+    border-bottom: 1px solid var(--border);
+  }
+
+  .delta-row:last-child {
+    border-bottom: none;
+  }
+
+  .delta-scores {
+    font-family: var(--font-mono);
+    white-space: nowrap;
+  }
+
+  .delta-scores em {
+    font-style: normal;
+    font-weight: 700;
+    margin-left: 6px;
+  }
+
+  .delta-scores em.up {
+    color: var(--success);
+  }
+
+  .delta-scores em.down {
+    color: #c42348;
+  }
+
+  .delta-row.delta-total {
+    font-weight: 600;
+    color: var(--text-primary);
+  }
+
+  .gate-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+  }
+
+  .gate-item {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    padding: 12px 14px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    font-size: 13px;
+    min-width: 0;
+  }
+
+  .gate-check {
+    color: var(--text-secondary);
+  }
+
+  .gate-check .mark-pass {
+    color: var(--success);
+    font-weight: 700;
+  }
+
+  .gate-check .mark-fail {
+    color: #c42348;
+    font-weight: 700;
+  }
+
+  .gate-detail {
+    font-family: var(--font-mono);
+    font-size: 12px;
+    color: #c42348;
+    overflow-wrap: anywhere;
+  }
+
+  .sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+  }
+
+  .image-preview[hidden] {
+    display: none;
+  }
+
+  #analysisNotes {
+    margin-top: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  #analysisNotes:empty {
+    display: none;
+  }
+
+  .note-row {
+    font-size: 13px;
+    line-height: 1.5;
+    padding: 10px 14px;
+    border-radius: var(--radius-md);
+    background: var(--warning-bg);
+    color: var(--text-primary);
+  }
+
+  @media (max-width: 640px) {
+    .gate-list {
+      grid-template-columns: repeat(2, 1fr);
+    }
+  }
+
+  @media (max-width: 420px) {
+    .gate-list {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  .example-field,
+  .image-field,
+  .tag-field {
+    margin-top: 20px;
+  }
+
+  .tag-field input {
+    width: 100%;
+    padding: 10px 14px;
+    border: 1.5px solid var(--border);
+    border-radius: var(--radius-sm);
+    font-family: var(--font-body);
+    font-size: 14px;
+    color: var(--text-primary);
+    background: var(--surface);
+    transition: border-color 0.2s, box-shadow 0.2s;
+  }
+
+  .tag-field input:focus {
+    outline: none;
+    border-color: var(--border-focus);
+    box-shadow: 0 0 0 3px rgba(0,0,0,0.08);
+  }
+
+  .tag-field input::placeholder {
+    color: var(--text-tertiary);
+  }
+
+  .optional {
+    font-weight: 400;
+    color: var(--text-tertiary);
+  }
+
+  .field-hint {
+    font-size: 12px;
+    color: var(--text-tertiary);
+    margin-top: 6px;
+  }
+
+  textarea.small {
+    min-height: 72px;
+    font-size: 14px;
+  }
+
+  .image-preview {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-top: 10px;
+  }
+
+  .image-preview img {
+    max-height: 96px;
+    max-width: 160px;
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--border);
+    object-fit: cover;
+  }
+
+  input[type="file"] {
+    font-size: 14px;
+    color: var(--text-secondary);
+  }
+
+  input[type="file"]:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+  }
+
+  .steps {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0;
+    margin-bottom: 40px;
+    list-style: none;
+  }
+
+  .step {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+    color: var(--text-tertiary);
+    font-weight: 500;
+    transition: color 0.2s;
+  }
+
+  .step.active {
+    color: var(--text-primary);
+    font-weight: 600;
+  }
+
+  .step.completed {
+    color: var(--success);
+  }
+
+  .step-number {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    font-weight: 600;
+    border: 1.5px solid var(--border);
+    background: var(--surface);
+    transition: all 0.2s;
+  }
+
+  .step.active .step-number {
+    border-color: var(--accent);
+    background: var(--accent);
+    color: var(--accent-text);
+  }
+
+  .step.completed .step-number {
+    border-color: var(--success);
+    background: var(--success);
+    color: var(--accent-text);
+  }
+
+  .step-connector {
+    width: 40px;
+    height: 1px;
+    background: var(--border);
+    margin: 0 8px;
+    transition: background 0.2s;
+  }
+
+  .step-connector.completed {
+    background: var(--success);
+  }
+
+  .section {
+    display: none;
+    animation: fadeIn 0.3s ease;
+  }
+
+  .section.visible {
+    display: block;
+  }
+
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(12px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 32px;
+    box-shadow: var(--shadow-sm);
+  }
+
+  .card + .card {
+    margin-top: 20px;
+  }
+
+  label.field-label {
+    display: block;
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: 8px;
+  }
+
+  textarea {
+    width: 100%;
+    min-height: 160px;
+    padding: 16px;
+    border: 1.5px solid var(--border);
+    border-radius: var(--radius-md);
+    font-family: var(--font-body);
+    font-size: 15px;
+    line-height: 1.6;
+    color: var(--text-primary);
+    background: var(--surface);
+    resize: vertical;
+    transition: border-color 0.2s, box-shadow 0.2s;
+  }
+
+  textarea:focus {
+    outline: none;
+    border-color: var(--border-focus);
+    box-shadow: 0 0 0 3px rgba(0,0,0,0.08);
+  }
+
+  textarea::placeholder {
+    color: var(--text-tertiary);
+  }
+
+  .input-meta {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 8px;
+    font-size: 12px;
+    color: var(--text-tertiary);
+    font-family: var(--font-mono);
+  }
+
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 12px 28px;
+    font-size: 15px;
+    font-weight: 600;
+    font-family: var(--font-body);
+    border: none;
+    border-radius: var(--radius-md);
+    cursor: pointer;
+    transition: all 0.15s;
+    line-height: 1.4;
+  }
+
+  .btn:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+  }
+
+  .btn-primary {
+    background: var(--accent);
+    color: var(--accent-text);
+  }
+
+  .btn-primary:hover {
+    background: var(--accent-hover);
+    transform: translateY(-1px);
+    box-shadow: var(--shadow-md);
+  }
+
+  .btn-primary:active {
+    transform: translateY(0);
+    box-shadow: none;
+  }
+
+  .btn-secondary {
+    background: var(--surface-alt);
+    color: var(--text-primary);
+    border: 1.5px solid var(--border);
+  }
+
+  .btn-secondary:hover {
+    background: var(--border);
+  }
+
+  .btn-sm {
+    padding: 8px 16px;
+    font-size: 13px;
+  }
+
+  .btn-group {
+    display: flex;
+    gap: 12px;
+    margin-top: 24px;
+    flex-wrap: wrap;
+  }
+
+  /* Analysis */
+  .score-ring {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 32px;
+  }
+
+  .score-circle {
+    position: relative;
+    width: 140px;
+    height: 140px;
+  }
+
+  .score-circle svg {
+    width: 140px;
+    height: 140px;
+    transform: rotate(-90deg);
+  }
+
+  .score-circle bg {
+    fill: var(--surface-alt);
+    stroke: var(--border);
+    stroke-width: 6;
+  }
+
+  .score-circle progress {
+    fill: none;
+    stroke: var(--accent);
+    stroke-width: 6;
+    stroke-linecap: round;
+    transition: stroke-dasharray 0.6s ease;
+  }
+
+  .score-value {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    text-align: center;
+    background: var(--surface);
+    padding: 12px 18px;
+    border-radius: 12px;
+    min-width: 80px;
+  }
+
+  .score-number {
+    font-size: 42px;
+    font-weight: 800;
+    line-height: 1;
+    font-family: var(--font-mono);
+    color: var(--text-primary);
+  }
+
+  .score-label {
+    font-size: 12px;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-top: 2px;
+    font-weight: 600;
+  }
+
+  .score-circle {
+    background: var(--surface-alt);
+    border-radius: 50%;
+    padding: 8px;
+  }
+
+  .dimensions {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+  }
+
+  .dimension {
+    padding: 16px;
+    background: var(--surface-alt);
+    border-radius: var(--radius-md);
+    border: 1px solid transparent;
+  }
+
+  .dimension-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 8px;
+  }
+
+  .dimension-name {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+  }
+
+  .dimension-score {
+    font-size: 14px;
+    font-weight: 700;
+    font-family: var(--font-mono);
+    color: var(--text-primary);
+  }
+
+  .dimension-bar {
+    height: 4px;
+    background: var(--border);
+    border-radius: 2px;
+    overflow: hidden;
+    margin-bottom: 6px;
+  }
+
+  .dimension-bar-fill {
+    height: 100%;
+    border-radius: 2px;
+    background: var(--accent);
+    transition: width 0.6s ease;
+  }
+
+  .dimension-explanation {
+    font-size: 12px;
+    color: var(--text-tertiary);
+    line-height: 1.5;
+  }
+
+  .dimension-evidence {
+    display: block;
+    margin-top: 4px;
+    padding-left: 8px;
+    border-left: 2px solid var(--border);
+    font-style: italic;
+  }
+
+  .verify-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 16px;
+    font-size: 13px;
+    color: var(--text-secondary);
+    cursor: pointer;
+  }
+
+  #conflictBox {
+    margin-top: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  #conflictBox:empty {
+    display: none;
+  }
+
+  /* Questions */
+  .questions-intro {
+    font-size: 16px;
+    color: var(--text-secondary);
+    margin-bottom: 24px;
+  }
+
+  .question-item {
+    padding: 20px 0;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .question-item:last-child {
+    border-bottom: none;
+    padding-bottom: 0;
+  }
+
+  .question-item:first-child {
+    padding-top: 0;
+  }
+
+  .question-text {
+    font-size: 15px;
+    font-weight: 500;
+    margin-bottom: 12px;
+    color: var(--text-primary);
+  }
+
+  .options-group {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .option-btn {
+    padding: 8px 16px;
+    border: 1.5px solid var(--border);
+    border-radius: 20px;
+    background: var(--surface);
+    font-size: 13px;
+    font-weight: 500;
+    font-family: var(--font-body);
+    color: var(--text-secondary);
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+
+  .option-btn:hover {
+    border-color: var(--text-secondary);
+    color: var(--text-primary);
+  }
+
+  .option-btn:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+  }
+
+  .option-btn.selected {
+    background: var(--accent);
+    color: var(--accent-text);
+    border-color: var(--accent);
+  }
+
+  .option-other {
+    display: none;
+    margin-top: 10px;
+  }
+
+  .option-other.visible {
+    display: block;
+  }
+
+  .option-other input {
+    width: 100%;
+    padding: 10px 14px;
+    border: 1.5px solid var(--border);
+    border-radius: var(--radius-sm);
+    font-size: 14px;
+    font-family: var(--font-body);
+    color: var(--text-primary);
+    background: var(--surface);
+    transition: border-color 0.2s, box-shadow 0.2s;
+  }
+
+  .option-other input:focus {
+    outline: none;
+    border-color: var(--border-focus);
+    box-shadow: 0 0 0 3px rgba(0,0,0,0.08);
+  }
+
+  .option-other input::placeholder {
+    color: var(--text-tertiary);
+  }
+
+  /* Optimized prompt */
+  .prompt-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 16px;
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+
+  .prompt-title {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+  }
+
+  .prompt-stats {
+    display: flex;
+    gap: 16px;
+    font-size: 12px;
+    font-family: var(--font-mono);
+    color: var(--text-tertiary);
+  }
+
+  .stat-reduction {
+    color: var(--success);
+    font-weight: 600;
+  }
+
+  .prompt-output {
+    background: #1e1e1e;
+    color: #d4d4d4;
+    padding: 20px 24px;
+    border-radius: var(--radius-md);
+    font-family: var(--font-mono);
+    font-size: 13px;
+    line-height: 1.7;
+    white-space: pre-wrap;
+    word-break: break-word;
+    max-height: 320px;
+    overflow-y: auto;
+    border: 1px solid #333;
+    position: relative;
+  }
+
+  .prompt-output .kw { color: #c42348; }
+  .prompt-output .str { color: #9a6700; }
+  .prompt-output .fn { color: #6a4c93; }
+  .prompt-output .cm { color: #6a9955; }
+
+  .btn-copy {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    padding: 6px 14px;
+    font-size: 12px;
+    background: rgba(255,255,255,0.1);
+    color: #d4d4d4;
+    border: 1px solid rgba(255,255,255,0.15);
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    font-family: var(--font-body);
+    font-weight: 500;
+    transition: all 0.15s;
+  }
+
+  .btn-copy:hover {
+    background: rgba(255,255,255,0.2);
+  }
+
+  .btn-copy:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+  }
+
+  .btn-copy.copied {
+    background: var(--success);
+    color: white;
+    border-color: var(--success);
+  }
+
+  /* Toast */
+  .toast {
+    position: fixed;
+    bottom: 24px;
+    left: 50%;
+    transform: translateX(-50%) translateY(100px);
+    background: var(--accent);
+    color: var(--accent-text);
+    padding: 12px 24px;
+    border-radius: var(--radius-md);
+    font-size: 14px;
+    font-weight: 500;
+    opacity: 0;
+    transition: all 0.3s ease;
+    z-index: 100;
+    pointer-events: none;
+    box-shadow: var(--shadow-md);
+  }
+
+  .toast.visible {
+    transform: translateX(-50%) translateY(0);
+    opacity: 1;
+  }
+
+  .skip-link {
+    position: absolute;
+    top: -40px;
+    left: 0;
+    background: var(--accent);
+    color: var(--accent-text);
+    padding: 8px 16px;
+    z-index: 100;
+    font-size: 14px;
+    transition: top 0.2s;
+  }
+
+  .skip-link:focus {
+    top: 0;
+  }
+
+  /* Responsive */
+  @media (max-width: 640px) {
+    .container {
+      padding: 24px 16px 60px;
+    }
+
+    header {
+      margin-bottom: 32px;
+      padding-top: 12px;
+    }
+
+    .logo-svg {
+      height: 36px;
+    }
+
+    .card {
+      padding: 24px 20px;
+    }
+
+    .dimensions {
+      grid-template-columns: 1fr;
+    }
+
+    .prompt-header {
+      flex-direction: column;
+      align-items: flex-start;
+    }
+
+    .steps {
+      gap: 0;
+    }
+
+    .step-connector {
+      width: 24px;
+    }
+
+    .option-btn {
+      padding: 7px 14px;
+      font-size: 12px;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+      animation-duration: 0.01ms !important;
+      transition-duration: 0.01ms !important;
+    }
+  }
+
+  /* Sidebar */
+  .sidebar-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.3);
+    z-index: 900;
+    opacity: 0;
+    transition: opacity 0.25s;
+  }
+  .sidebar-overlay.open {
+    display: block;
+    opacity: 1;
+  }
+
+  .sidebar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 340px;
+    max-width: 85vw;
+    height: 100vh;
+    background: var(--surface);
+    border-right: 1px solid var(--border);
+    z-index: 910;
+    transform: translateX(-100%);
+    transition: transform 0.25s ease;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+  .sidebar.open {
+    transform: translateX(0);
+  }
+
+  .sidebar-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 20px 20px 16px;
+    border-bottom: 1px solid var(--border);
+    flex-shrink: 0;
+  }
+
+  .sidebar-title {
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--text-primary);
+  }
+
+  .sidebar-close {
+    background: none;
+    border: none;
+    font-size: 20px;
+    color: var(--text-tertiary);
+    cursor: pointer;
+    padding: 4px 8px;
+    border-radius: var(--radius-sm);
+    line-height: 1;
+    transition: color 0.15s, background 0.15s;
+  }
+  .sidebar-close:hover {
+    color: var(--text-primary);
+    background: var(--surface-alt);
+  }
+
+  .sidebar-body {
+    flex: 1;
+    overflow-y: auto;
+    padding: 16px 20px;
+  }
+
+  .sidebar-empty {
+    text-align: center;
+    padding: 40px 0;
+    color: var(--text-tertiary);
+    font-size: 14px;
+    line-height: 1.6;
+  }
+
+  .sidebar-group-label {
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--text-tertiary);
+    margin: 16px 0 8px;
+  }
+  .sidebar-group-label:first-child {
+    margin-top: 0;
+  }
+
+  .sidebar-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 12px;
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    transition: background 0.15s;
+    position: relative;
+    margin-bottom: 4px;
+  }
+  .sidebar-item:hover {
+    background: var(--surface-alt);
+  }
+
+  .sidebar-item-score {
+    flex-shrink: 0;
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 13px;
+    font-weight: 700;
+    font-family: var(--font-mono);
+    color: var(--accent-text);
+    background: var(--accent);
+  }
+  .sidebar-item-score.high {
+    background: var(--success);
+  }
+
+  .sidebar-item-text {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .sidebar-item-prompt {
+    font-size: 14px;
+    color: var(--text-primary);
+    line-height: 1.4;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  .sidebar-item-meta {
+    font-size: 12px;
+    color: var(--text-tertiary);
+    margin-top: 4px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .sidebar-item-tag {
+    display: inline-block;
+    padding: 1px 6px;
+    background: var(--surface-alt);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--text-secondary);
+    white-space: nowrap;
+  }
+
+  .sidebar-item-delete {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    background: none;
+    border: none;
+    font-size: 14px;
+    color: var(--text-tertiary);
+    cursor: pointer;
+    padding: 2px 6px;
+    border-radius: 4px;
+    opacity: 0;
+    transition: opacity 0.15s, color 0.15s, background 0.15s;
+    line-height: 1;
+  }
+  .sidebar-item:hover .sidebar-item-delete {
+    opacity: 1;
+  }
+  .sidebar-item-delete:hover {
+    color: #c42348;
+    background: #fce8ec;
+  }
+
+  .sidebar-footer {
+    padding: 12px 20px;
+    border-top: 1px solid var(--border);
+    flex-shrink: 0;
+  }
+
+  .sidebar-clear {
+    width: 100%;
+    background: none;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 8px;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-secondary);
+    cursor: pointer;
+    transition: color 0.15s, border-color 0.15s;
+  }
+  .sidebar-clear:hover {
+    color: #c42348;
+    border-color: #c42348;
+  }
+
+  .history-toggle {
+    position: fixed;
+    top: 20px;
+    left: 20px;
+    z-index: 800;
+    width: 40px;
+    height: 40px;
+    border-radius: var(--radius-sm);
+    background: var(--surface);
+    border: 1px solid var(--border);
+    box-shadow: var(--shadow-sm);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    font-size: 18px;
+    color: var(--text-secondary);
+    transition: color 0.15s, background 0.15s, box-shadow 0.15s;
+  }
+  .history-toggle:hover {
+    color: var(--text-primary);
+    background: var(--surface-alt);
+    box-shadow: var(--shadow-md);
+  }
+  .history-toggle .badge {
+    position: absolute;
+    top: -4px;
+    right: -4px;
+    min-width: 18px;
+    height: 18px;
+    padding: 0 5px;
+    border-radius: 9px;
+    background: var(--accent);
+    color: var(--accent-text);
+    font-size: 10px;
+    font-weight: 700;
+    font-family: var(--font-mono);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    line-height: 1;
+  }
+  .history-toggle .badge:empty {
+    display: none;
+  }
+
+  @media (max-width: 640px) {
+    .sidebar {
+      width: 100%;
+      max-width: 100vw;
+    }
+    .history-toggle {
+      top: 12px;
+      left: 12px;
+    }
+  }
+</style>
+</head>
+<body>
+
+<a href="#main-content" class="skip-link">Skip to main content</a>
+
+<button class="history-toggle" id="historyToggle" aria-label="Open prompt history" title="Prompt history">
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+  <span class="badge" id="historyBadge"></span>
+</button>
+
+<div class="sidebar-overlay" id="sidebarOverlay"></div>
+<aside class="sidebar" id="sidebar" aria-label="Prompt history">
+  <div class="sidebar-header">
+    <span class="sidebar-title">Prompt history</span>
+    <button class="sidebar-close" id="sidebarClose" aria-label="Close history">&times;</button>
+  </div>
+  <div class="sidebar-body" id="sidebarBody"></div>
+  <div class="sidebar-footer">
+    <button class="sidebar-clear" id="sidebarClear">Clear all history</button>
+  </div>
+</aside>
+
+<div class="container" id="main-content" role="main">
+
+  <header>
+    <div class="logo">
+      <svg class="logo-svg" width="196" height="56" viewBox="0 0 196 56" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+        <path d="M80.9439 41.8681C77.6799 41.8681 75.2159 40.6521 73.5519 38.2201C71.9199 35.7881 71.1039 32.3321 71.1039 27.8521C71.1039 23.3721 71.9199 19.9161 73.5519 17.4841C75.2159 15.0521 77.6799 13.8361 80.9439 13.8361C82.5759 13.8361 84.0159 14.2361 85.2639 15.0361C86.5439 15.8361 87.5839 16.7481 88.3839 17.7721V11.7241H85.5519V3.85205H99.4239V33.3241H101.536V41.1961H88.3839V37.9321C87.5839 38.9561 86.5439 39.8681 85.2639 40.6681C84.0159 41.4681 82.5759 41.8681 80.9439 41.8681ZM85.5999 33.3241C86.5279 33.3241 87.2159 33.0841 87.6639 32.6041C88.1439 32.0921 88.3839 31.3081 88.3839 30.2521V25.4521C88.3839 24.3961 88.1439 23.6281 87.6639 23.1481C87.2159 22.6361 86.5279 22.3801 85.5999 22.3801C84.6719 22.3801 83.9679 22.6361 83.4879 23.1481C83.0399 23.6281 82.8159 24.3961 82.8159 25.4521V30.2521C82.8159 31.3081 83.0399 32.0921 83.4879 32.6041C83.9679 33.0841 84.6719 33.3241 85.5999 33.3241Z" fill="currentColor"/>
+        <path d="M118.656 13.8523C121.92 13.8523 124.384 15.0683 126.048 17.5003C127.68 19.9323 128.496 23.3883 128.496 27.8683C128.496 32.3483 127.68 35.8043 126.048 38.2363C124.384 40.6683 121.92 41.8843 118.656 41.8843C117.024 41.8843 115.584 41.4843 114.336 40.6843C113.056 39.8843 112.016 38.9723 111.216 37.9483L111.216 43.9963L114.048 43.9963L114.048 52.148L100.176 52.1479L100.176 22.3963L98.064 22.3963L98.1518 14.8522L111.216 14.8522L111.216 17.7883C112.016 16.7643 113.056 15.8523 114.336 15.0523C115.584 14.2523 117.024 13.8523 118.656 13.8523ZM114 22.3963C113.072 22.3963 112.384 22.6363 111.936 23.1163C111.456 23.6283 111.216 24.4123 111.216 25.4683L111.216 30.2683C111.216 31.3243 111.456 32.0923 111.936 32.5723C112.384 33.0843 113.072 33.3403 114 33.3403C114.928 33.3403 115.632 33.0843 116.112 32.5723C116.56 32.0923 116.784 31.3243 116.784 30.2683L116.784 25.4683C116.784 24.4123 116.56 23.6283 116.112 23.1163C115.632 22.6363 114.928 22.3963 114 22.3963Z" fill="currentColor"/>
+        <path d="M58.5999 41.8841C54.0559 41.8841 50.5039 40.7001 47.9439 38.3321C45.3839 35.9321 44.1039 32.4441 44.1039 27.8681C44.1039 23.2921 45.3839 19.8201 47.9439 17.4521C50.5039 15.0521 54.0559 13.8521 58.5999 13.8521C63.1119 13.8521 66.3599 15.0361 68.3439 17.4041C70.3599 19.7401 71.3679 22.6521 71.3679 26.1401V29.5961H55.8159V29.8841C55.8159 31.0681 56.1679 31.9481 56.8719 32.5241C57.5759 33.0681 58.7439 33.3401 60.3759 33.3401C62.3279 33.3401 64.1839 33.1961 65.9439 32.9081C67.7039 32.6201 69.2399 32.2521 70.5519 31.8041V39.4841C69.4319 40.0921 67.7839 40.6521 65.6079 41.1641C63.4639 41.6441 61.1279 41.8841 58.5999 41.8841ZM61.3839 24.3161V23.7401C61.3839 22.6521 61.1439 21.8681 60.6639 21.3881C60.2159 20.9081 59.5279 20.6681 58.5999 20.6681C57.6719 20.6681 56.9679 20.9241 56.4879 21.4361C56.0399 21.9161 55.8159 22.6841 55.8159 23.7401V24.3161H61.3839Z" fill="currentColor"/>
+        <path d="M142.56 41.8843C138.016 41.8843 134.464 40.7003 131.904 38.3323C129.344 35.9323 128.064 32.4443 128.064 27.8683C128.064 23.2923 129.344 19.8203 131.904 17.4523C134.464 15.0523 138.016 13.8523 142.56 13.8523C147.072 13.8523 150.32 15.0363 152.304 17.4043C154.32 19.7403 155.328 22.6523 155.328 26.1403V29.5963H139.776V29.8843C139.776 31.0683 140.128 31.9483 140.832 32.5243C141.536 33.0683 142.704 33.3403 144.336 33.3403C146.288 33.3403 148.144 33.1963 149.904 32.9083C151.664 32.6203 153.2 32.2523 154.512 31.8043V39.4843C153.392 40.0923 151.744 40.6523 149.568 41.1643C147.424 41.6443 145.088 41.8843 142.56 41.8843ZM145.344 24.3163V23.7403C145.344 22.6523 145.104 21.8683 144.624 21.3883C144.176 20.9083 143.488 20.6683 142.56 20.6683C141.632 20.6683 140.928 20.9243 140.448 21.4363C140 21.9163 139.776 22.6843 139.776 23.7403V24.3163H145.344Z" fill="currentColor"/>
+        <path d="M9.06396 33.9801H11.464V12.3801H9.06396V4.50806H31.096C35.224 4.50806 38.376 5.35606 40.552 7.05206C42.728 8.74806 43.816 11.5001 43.816 15.3081C43.816 17.4521 43.384 19.3081 42.52 20.8761C41.656 22.4441 40.424 23.5321 38.824 24.1401L38.872 24.6201C41.944 25.1001 43.48 26.9881 43.48 30.2841V33.9801H45.736V41.8521H30.52V30.5721C30.52 29.3241 30.328 28.3801 29.944 27.7401C29.592 27.1001 29.016 26.6681 28.216 26.4441C27.448 26.2201 26.344 26.1081 24.904 26.1081V33.9801H28.072V41.8521H9.06396V33.9801ZM27.496 20.2521C28.424 20.2521 29.112 20.0121 29.56 19.5321C30.04 19.0201 30.28 18.2361 30.28 17.1801V15.4521C30.28 14.3961 30.04 13.6281 29.56 13.1481C29.112 12.6361 28.424 12.3801 27.496 12.3801H24.904V20.2521H27.496Z" fill="currentColor"/>
+        <path d="M186.936 34.3403V42.2123H171.768V34.3403H173.784V26.4683C173.784 25.4123 173.56 24.6443 173.112 24.1643C172.664 23.6523 171.992 23.3963 171.096 23.3963C169.176 23.3963 168.216 24.4203 168.216 26.4683V34.3403H170.232V42.2123H155.064V34.3403H157.176V23.3963H155.064V15.5243H168.216V19.2683C170.52 16.3243 173.4 14.8523 176.856 14.8523C179.512 14.8523 181.496 15.6843 182.808 17.3483C184.152 19.0123 184.824 21.3003 184.824 24.2123V34.3403H186.936Z" fill="currentColor"/>
+        <rect x="179.059" y="34.3354" width="7.87695" height="7.87695" fill="#c42348"/>
+      </svg>
+    </div>
+    <p class="tagline">Turn "meh" prompts into "make it happen."</p>
+    <p class="backend-status" id="backendStatus" role="status" aria-live="polite"><span class="status-dot" id="statusDot" aria-hidden="true"></span><span id="statusText">Checking connection…</span></p>
+  </header>
+
+  <nav aria-label="Progress">
+    <ol class="steps" id="stepIndicator" role="list">
+      <li class="step active" data-step="1">
+        <span class="step-number" aria-current="step">1</span>
+        <span>Your prompt</span>
+      </li>
+      <li class="step-connector" aria-hidden="true"></li>
+      <li class="step" data-step="2">
+        <span class="step-number">2</span>
+        <span>Analysis</span>
+      </li>
+      <li class="step-connector" aria-hidden="true"></li>
+      <li class="step" data-step="3">
+        <span class="step-number">3</span>
+        <span>Clarify <span class="optional" style="font-weight:400; font-size:12px;">(optional)</span></span>
+      </li>
+      <li class="step-connector" aria-hidden="true"></li>
+      <li class="step" data-step="4">
+        <span class="step-number">4</span>
+        <span>Optimized</span>
+      </li>
+    </ol>
+  </nav>
+
+  <!-- Step 1: Input -->
+  <section class="section visible" id="section-input" aria-labelledby="input-heading">
+    <div class="card">
+      <label class="field-label" for="rawPrompt">Your prompt</label>
+      <textarea
+        id="rawPrompt"
+        placeholder="Design a dashboard with charts, needs user preferences, dark mode..."
+        aria-describedby="prompt-meta"
+        spellcheck="false"
+      ></textarea>
+      <div class="input-meta" id="prompt-meta">
+        <span id="charCount">0 characters</span>
+        <span id="tokenEstimate">~0 tokens</span>
+      </div>
+      <div class="example-field">
+        <label class="field-label" for="exampleInput">Reference example <span class="optional">(optional)</span></label>
+        <textarea id="exampleInput" class="small" placeholder="Paste a description of a screen or brief you like, e.g. 'Sidebar 240px, icons plus labels, active item is a filled pill…'"></textarea>
+        <p class="field-hint">Steers the compiled brief toward a style you already like.</p>
+      </div>
+      <div class="tag-field">
+        <label class="field-label" for="tagInput">Project tag <span class="optional">(optional)</span></label>
+        <input type="text" id="tagInput" placeholder="e.g. food-delivery-app, dashboard-v2" maxlength="40" spellcheck="false">
+        <p class="field-hint">Groups this prompt in your history.</p>
+      </div>
+      <div class="image-field">
+        <label class="field-label" for="imageInput">Reference image <span class="optional">(optional)</span></label>
+        <input type="file" id="imageInput" accept="image/png,image/jpeg,image/webp" aria-describedby="imageHint">
+        <p class="field-hint" id="imageHint">PNG, JPEG or WebP, max 4 MB. The analysis can see layout and style, not just read about them.</p>
+        <div class="image-preview" id="imagePreview" hidden>
+          <img id="imagePreviewImg" alt="Reference image preview">
+          <button type="button" class="btn btn-secondary btn-sm" id="imageRemove">Remove</button>
+        </div>
+      </div>
+      <div class="btn-group">
+        <button class="btn btn-primary" id="analyzeBtn" aria-label="Analyze your prompt">Analyze prompt</button>
+      </div>
+      <p class="field-hint">Tip: Cmd+Enter (or Ctrl+Enter) runs Analyze.</p>
+    </div>
+  </section>
+
+  <!-- Step 2: Analysis -->
+  <section class="section" id="section-analysis" aria-labelledby="analysis-heading">
+    <div class="card">
+      <h2 id="analysis-heading" style="font-size:18px; margin-bottom:24px;">Prompt quality analysis</h2>
+      <div class="score-ring" role="img" aria-label="Prompt quality score">
+        <div class="score-circle">
+          <svg viewBox="0 0 140 140">
+            <circle class="bg" cx="70" cy="70" r="60"></circle>
+            <circle id="scoreArc" cx="70" cy="70" r="60" stroke-dasharray="0 377"></circle>
+          </svg>
+          <div class="score-value">
+            <div class="score-number" id="scoreNumber" aria-live="polite">0</div>
+            <div class="score-label">of 100</div>
+          </div>
+        </div>
+      </div>
+      <div class="dimensions" role="list" aria-label="Quality dimensions">
+        <div class="dimension" role="listitem">
+          <div class="dimension-header">
+            <span class="dimension-name">Visual clarity</span>
+            <span class="dimension-score" id="goalScore">0</span>
+          </div>
+          <div class="dimension-bar" role="progressbar" aria-label="Visual clarity progress">
+            <div class="dimension-bar-fill" id="goalBar" style="width:0%"></div>
+          </div>
+          <div class="dimension-explanation" id="goalExplanation">Analyzing...</div>
+        </div>
+        <div class="dimension" role="listitem">
+          <div class="dimension-header">
+            <span class="dimension-name">Interaction definition</span>
+            <span class="dimension-score" id="contextScore">0</span>
+          </div>
+          <div class="dimension-bar" role="progressbar" aria-label="Interaction definition progress">
+            <div class="dimension-bar-fill" id="contextBar" style="width:0%"></div>
+          </div>
+          <div class="dimension-explanation" id="contextExplanation">Analyzing...</div>
+        </div>
+        <div class="dimension" role="listitem">
+          <div class="dimension-header">
+            <span class="dimension-name">Content structure</span>
+            <span class="dimension-score" id="constraintsScore">0</span>
+          </div>
+          <div class="dimension-bar" role="progressbar" aria-label="Content structure progress">
+            <div class="dimension-bar-fill" id="constraintsBar" style="width:0%"></div>
+          </div>
+          <div class="dimension-explanation" id="constraintsExplanation">Analyzing...</div>
+        </div>
+        <div class="dimension" role="listitem">
+          <div class="dimension-header">
+            <span class="dimension-name">Experience flow</span>
+            <span class="dimension-score" id="acceptanceScore">0</span>
+          </div>
+          <div class="dimension-bar" role="progressbar" aria-label="Experience flow progress">
+            <div class="dimension-bar-fill" id="acceptanceBar" style="width:0%"></div>
+          </div>
+          <div class="dimension-explanation" id="acceptanceExplanation">Analyzing...</div>
+        </div>
+      </div>
+      <div id="analysisNotes" aria-live="polite"></div>
+      <p id="scoreHistory" class="field-hint" aria-live="polite"></p>
+      <div class="btn-group">
+        <button class="btn btn-primary" id="nextBtn">Continue</button>
+        <button class="btn btn-secondary" id="editPromptBtn">Edit prompt</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- Step 3: Questions -->
+  <section class="section" id="section-questions" aria-labelledby="questions-heading">
+    <div class="card">
+      <h2 id="questions-heading" style="font-size:18px; margin-bottom:8px;">A few details would improve this prompt</h2>
+      <p style="font-size:14px; color:var(--text-secondary); margin-bottom:24px;">Select an option or provide your own answer. These are optional — skip to compile as-is.</p>
+      <p id="provenanceNote" class="field-hint" aria-live="polite"></p>
+      <div id="questionsContainer" role="list" aria-label="Clarification questions"></div>
+      <div id="conflictBox" aria-live="polite"></div>
+      <label class="verify-row"><input type="checkbox" id="verifyToggle" checked> Verify improvement after compiling <span class="optional">(1 extra call)</span></label>
+      <div class="btn-group">
+        <button class="btn btn-primary" id="compileBtn">Compile prompt</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- Step 4: Optimized Prompt -->
+  <section class="section" id="section-optimized" aria-labelledby="optimized-heading">
+    <div class="card">
+      <h2 id="optimized-heading" style="font-size:18px; margin-bottom:20px;">Optimized prompt</h2>
+      <div class="prompt-header">
+        <span class="prompt-title">Claude prompt</span>
+        <div class="prompt-stats">
+          <span id="tokenCount">~0 tokens</span>
+          <span id="reductionStat" class="stat-reduction"></span>
+        </div>
+      </div>
+      <div style="position:relative;">
+        <div class="prompt-output" id="promptOutput" role="region" aria-label="Claude prompt" tabindex="0"></div>
+        <button class="btn-copy" id="copyBtn" aria-label="Copy optimized prompt to clipboard">Copy</button>
+      </div>
+      <div class="delta-panel" id="deltaPanel" hidden>
+        <h3 class="delta-title">Quality improvement</h3>
+        <div id="deltaRows" role="list" aria-label="Score change per dimension"></div>
+      </div>
+      <div class="delta-panel" id="gatePanel" hidden>
+        <h3 class="delta-title" id="gateTitle">Brief acceptance gate</h3>
+        <div id="gateRows" class="gate-list" role="list" aria-label="Brief quality checks"></div>
+      </div>
+      <p id="repairNote" class="field-hint" hidden></p>
+      <div class="btn-group" style="margin-top:20px;">
+        <button class="btn btn-primary" id="newBtn">Start over</button>
+      </div>
+    </div>
+  </section>
+
+</div>
+
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script>
+  const samplePrompt = "Design a dashboard with charts, needs user preferences, dark mode...";
+
+  let answers = [];
+  let refImage = null;
+  let originalTokenCount = 0;
+  let analysisResult = null;
+
+  const SKIP_QUESTIONS_THRESHOLD = 80;
+  const STORAGE_KEY = 'promptCompiler.v1';
+  const HISTORY_KEY = 'promptCompiler.history';
+  let currentStep = 'section-input';
+  let scoreHistory = [];
+  let lastAnalysisCache = { hash: null, result: null };
+  let isAnalyzing = false;
+  let isCompiling = false;
+
+  const OLLAMA_URL = '/api/generate';
+
+  function promptHash(t) {
+    let h = 5381;
+    const s = String(t || '');
+    for (let i = 0; i < s.length; i++) { h = ((h << 5) + h + s.charCodeAt(i)) | 0; }
+    return 'h' + (h >>> 0).toString(36);
+  }
+
+  function analysisCacheKey(prompt, example) {
+    return promptHash(prompt + '\n' + (example || '') + (refImage ? '\n[image]' : ''));
+  }
+
+  function persist() {
+    try {
+      const rn = $('repairNote');
+      localStorage.setItem(STORAGE_KEY, JSON.stringify({
+        v: 1,
+        rawPrompt: $('rawPrompt').value,
+        exampleInput: $('exampleInput').value,
+        tagInput: $('tagInput') ? $('tagInput').value : '',
+        originalTokenCount,
+        answers, scoreHistory,
+        analysis: analysisResult,
+        analysisCache: lastAnalysisCache,
+        brief: $('promptOutput') ? $('promptOutput').textContent : '',
+        repairNote: (rn && !rn.hidden) ? rn.textContent : '',
+        hadImage: !!refImage,
+        step: currentStep
+      }));
+    } catch (e) { /* private mode / quota — non-fatal */ }
+  }
+
+  // --- History ---
+  function loadHistory() {
+    try { return JSON.parse(localStorage.getItem(HISTORY_KEY)) || []; } catch (e) { return []; }
+  }
+
+  function saveHistory(arr) {
+    try { localStorage.setItem(HISTORY_KEY, JSON.stringify(arr)); } catch (e) {}
+  }
+
+  function addHistoryEntry(entry) {
+    const history = loadHistory();
+    history.unshift(entry);
+    if (history.length > 50) history.length = 50;
+    saveHistory(history);
+    renderSidebar();
+  }
+
+  function deleteHistoryEntry(id) {
+    const history = loadHistory().filter(e => e.id !== id);
+    saveHistory(history);
+    renderSidebar();
+  }
+
+  function clearHistory() {
+    saveHistory([]);
+    renderSidebar();
+  }
+
+  function renderSidebar() {
+    const history = loadHistory();
+    const body = $('sidebarBody');
+    const badge = $('historyBadge');
+    badge.textContent = history.length || '';
+
+    if (!history.length) {
+      body.innerHTML = '<div class="sidebar-empty">No prompts yet.<br>Optimized prompts will appear here.</div>';
+      return;
+    }
+
+    const grouped = {};
+    history.forEach(e => {
+      const tag = e.tag || 'Untagged';
+      if (!grouped[tag]) grouped[tag] = [];
+      grouped[tag].push(e);
+    });
+
+    let html = '';
+    const tagOrder = Object.keys(grouped).sort((a, b) => {
+      if (a === 'Untagged') return 1;
+      if (b === 'Untagged') return -1;
+      return a.localeCompare(b);
+    });
+
+    tagOrder.forEach(tag => {
+      html += `<div class="sidebar-group-label">${escapeHtml(tag)}</div>`;
+      grouped[tag].forEach(e => {
+        const scoreClass = e.score >= 70 ? 'high' : '';
+        const snippet = e.prompt.length > 80 ? e.prompt.slice(0, 80) + '…' : e.prompt;
+        const date = new Date(e.date);
+        const timeAgo = formatTimeAgo(date);
+        html += `
+          <div class="sidebar-item" data-id="${e.id}" role="button" tabindex="0" aria-label="Load prompt: ${escapeHtml(snippet)}">
+            <div class="sidebar-item-score ${scoreClass}">${e.score || '—'}</div>
+            <div class="sidebar-item-text">
+              <div class="sidebar-item-prompt">${escapeHtml(snippet)}</div>
+              <div class="sidebar-item-meta">
+                <span>${timeAgo}</span>
+                ${e.tag ? `<span class="sidebar-item-tag">${escapeHtml(e.tag)}</span>` : ''}
+              </div>
+            </div>
+            <button class="sidebar-item-delete" data-delete="${e.id}" aria-label="Delete entry" title="Delete">&times;</button>
+          </div>`;
+      });
+    });
+    body.innerHTML = html;
+  }
+
+  function formatTimeAgo(date) {
+    const diff = Date.now() - date.getTime();
+    const mins = Math.floor(diff / 60000);
+    if (mins < 1) return 'just now';
+    if (mins < 60) return `${mins}m ago`;
+    const hrs = Math.floor(mins / 60);
+    if (hrs < 24) return `${hrs}h ago`;
+    const days = Math.floor(hrs / 24);
+    if (days < 7) return `${days}d ago`;
+    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+  }
+
+  function openSidebar() {
+    renderSidebar();
+    $('sidebar').classList.add('open');
+    $('sidebarOverlay').classList.add('open');
+    $('historyToggle').setAttribute('aria-expanded', 'true');
+  }
+
+  function closeSidebar() {
+    $('sidebar').classList.remove('open');
+    $('sidebarOverlay').classList.remove('open');
+    $('historyToggle').setAttribute('aria-expanded', 'false');
+  }
+
+  function loadFromHistory(id) {
+    const entry = loadHistory().find(e => e.id === id);
+    if (!entry) return;
+    $('rawPrompt').value = entry.prompt;
+    if (entry.example) $('exampleInput').value = entry.example;
+    updateCharCount();
+    closeSidebar();
+    showSection('section-input');
+    showToast('Prompt loaded from history.');
+  }
+
+  function paintAnalysis(dims, overall) {
+    animateScore(dims.visual_clarity.score, 'goal', dims.visual_clarity.explanation, dims.visual_clarity.evidence);
+    animateScore(dims.interaction_definition.score, 'context', dims.interaction_definition.explanation, dims.interaction_definition.evidence);
+    animateScore(dims.content_structure.score, 'constraints', dims.content_structure.explanation, dims.content_structure.evidence);
+    animateScore(dims.experience_flow.score, 'acceptance', dims.experience_flow.explanation, dims.experience_flow.evidence);
+
+    setTimeout(() => {
+      $('scoreNumber').textContent = overall;
+      const circumference = 2 * Math.PI * 60;
+      const offset = circumference - (overall / 100) * circumference;
+      $('scoreArc').setAttribute('stroke-dasharray', `${circumference - offset} ${circumference}`);
+    }, 400);
+  }
+
+  function renderScoreHistory() {
+    const el = $('scoreHistory');
+    if (!el) return;
+    el.textContent = scoreHistory.length > 1 ? 'Previous runs: ' + scoreHistory.map(h => h.overall).join(' → ') : '';
+  }
+
+  function $(id) { return document.getElementById(id); }
+
+  function showSection(id) {
+    document.querySelectorAll('.section').forEach(s => s.classList.remove('visible'));
+    $(id).classList.add('visible');
+    updateSteps(id);
+    currentStep = id;
+    persist();
+  }
+
+  function updateSteps(activeId) {
+    const stepMap = { 'section-input': 1, 'section-analysis': 2, 'section-questions': 3, 'section-optimized': 4 };
+    const step = stepMap[activeId];
+    const indicators = document.querySelectorAll('.step');
+    const connectors = document.querySelectorAll('.step-connector');
+
+    indicators.forEach((el, i) => {
+      const stepNum = i + 1;
+      el.classList.remove('active', 'completed');
+      el.querySelector('.step-number').removeAttribute('aria-current');
+      if (stepNum < step) {
+        el.classList.add('completed');
+        el.querySelector('.step-number').textContent = '✓';
+      } else if (stepNum === step) {
+        el.classList.add('active');
+        el.querySelector('.step-number').setAttribute('aria-current', 'step');
+        el.querySelector('.step-number').textContent = stepNum;
+      } else {
+        el.querySelector('.step-number').textContent = stepNum;
+      }
+    });
+
+    connectors.forEach((el, i) => {
+      el.classList.toggle('completed', i < step - 1);
+    });
+  }
+
+  function estimateTokens(text) {
+    if (!text.trim()) return 0;
+    return Math.ceil(text.length / 4);
+  }
+
+  function updateCharCount() {
+    const text = $('rawPrompt').value;
+    const chars = text.length;
+    const tokens = estimateTokens(text);
+    $('charCount').textContent = `${chars} character${chars !== 1 ? 's' : ''}`;
+    $('tokenEstimate').textContent = `~${tokens} tokens`;
+  }
+
+  function setButtonLoading(btn, loading) {
+    if (loading) {
+      btn.dataset.originalText = btn.textContent;
+      btn.textContent = 'Analyzing...';
+      btn.disabled = true;
+      btn.style.opacity = '0.7';
+      btn.style.cursor = 'not-allowed';
+    } else {
+      btn.textContent = btn.dataset.originalText || btn.textContent;
+      btn.disabled = false;
+      btn.style.opacity = '';
+      btn.style.cursor = '';
+    }
+  }
+
+  function showLoadingInAnalysis() {
+    const dims = ['goal', 'context', 'constraints', 'acceptance'];
+    dims.forEach(d => {
+      const el = $(`${d}Score`);
+      const bar = $(`${d}Bar`);
+      const explEl = $(`${d}Explanation`);
+      if (el) el.textContent = '...';
+      if (bar) { bar.style.width = '0%'; bar.style.transition = 'none'; }
+      if (explEl) explEl.textContent = 'Analyzing...';
+    });
+    $('scoreNumber').textContent = '?';
+  }
+
+  function connectionErrorMessage(err, usingWhat) {
+    const detail = (err && err.message) ? err.message : String(err);
+    if (window.location.protocol === 'file:') {
+      return 'Page opened as a file, so Analyze cannot reach the proxy (Failed to fetch). Run "python3 proxy.py" and open http://localhost:8080 instead. ' + usingWhat + '.';
+    }
+    return `Could not reach the AI backend (${detail}). Open the app via http://localhost:8080 with proxy.py running. Using ${usingWhat}.`;
+  }
+
+  async function callOllama(prompt, system, wantJson) {
+    try {
+      const response = await fetch(OLLAMA_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          model: 'gemma3:4b',
+          prompt: prompt,
+          system: system || '',
+          stream: false,
+          options: { temperature: 0.1 },
+          response_format: wantJson ? 'json' : 'text',
+          ...(refImage ? { images: [refImage.b64], image_mime: refImage.mime } : {})
+        })
+      });
+
+      if (!response.ok) {
+        let detail = `Backend error ${response.status}`;
+        try {
+          const errBody = await response.json();
+          if (errBody && errBody.error) detail += `: ${String(errBody.error).slice(0, 200)}`;
+        } catch (_) { /* non-JSON error body — keep status only */ }
+        throw new Error(detail);
+      }
+
+      const data = await response.json();
+      return data.response || '';
+    } catch (err) {
+      console.error('Ollama API error:', err);
+      throw err;
+    }
+  }
+
+  function parseJSONFromResponse(text) {
+    try {
+      return JSON.parse(text);
+    } catch (e) {
+      const codeBlockMatch = text.match(/```(?:json)?\s*([\s\S]*?)```/);
+      if (codeBlockMatch) {
+        try { return JSON.parse(codeBlockMatch[1].trim()); }
+        catch (e2) { /* fall through */ }
+      }
+      const braceStart = text.indexOf('{');
+      const braceEnd = text.lastIndexOf('}');
+      if (braceStart !== -1 && braceEnd > braceStart) {
+        try { return JSON.parse(text.substring(braceStart, braceEnd + 1)); }
+        catch (e3) { /* fall through */ }
+      }
+      return null;
+    }
+  }
+
+  const SYSTEM_ANALYSIS = 'You are an expert UI/UX prompt evaluator. Your response MUST be a complete, valid JSON object. Never include any text outside the JSON. Never omit any field. The questions array MUST contain exactly 4 objects. Every explanation must be a specific one-sentence sentence tied to the prompt content.';
+
+  const ANALYSIS_QUESTIONS_BLOCK = `  "questions": [
+    {"text": "Concrete UI decision missing from this prompt?", "options": ["Concrete interface choice 1", "Concrete interface choice 2", "Concrete interface choice 3"], "hasOther": true, "otherPlaceholder": "Describe your answer..."},
+    {"text": "Second concrete UI decision missing from this prompt?", "options": ["Concrete interface choice 1", "Concrete interface choice 2", "Concrete interface choice 3"], "hasOther": true, "otherPlaceholder": "Describe your answer..."},
+    {"text": "Third concrete UI decision missing from this prompt?", "options": ["Concrete interface choice 1", "Concrete interface choice 2", "Concrete interface choice 3"], "hasOther": true, "otherPlaceholder": "Describe your answer..."},
+    {"text": "Fourth concrete UI decision missing from this prompt?", "options": ["Concrete interface choice 1", "Concrete interface choice 2", "Concrete interface choice 3"], "hasOther": true, "otherPlaceholder": "Describe your answer..."}
+  ]`;
+
+  const ANALYSIS_RULES_BLOCK = `QUESTION RULES (must follow all of them):
+- Exactly 4 questions, one per dimension, weakest dimension first.
+- Each question must name the concrete interface decision missing from THIS prompt and reference its topic (e.g. dashboard, tasks, charts) — never generic filler.
+- Options must be concrete interface choices (e.g. "Left sidebar", "Top tabs", "Bottom bar") — NEVER placeholders like "Option A", "Option B", letters, or "A: ...".
+- Question text must not start with "Q:" and options must not start with "A:" or a letter.
+- hasOther is always true.
+- Each dimension's "evidence" must be an exact short quote (max 15 words) copied from the prompt above — never invented, null if nothing supports it.`;
+
+  function buildAnalysisPrompt(promptText, wantQuestions = true, hasImage = false) {
+    return `You are an expert UI/UX prompt evaluator. Your job is to rigorously assess how well a design prompt communicates what a prototype should look like, feel like, and behave like. 
+
+SCORING RUBRIC — Each dimension is scored 0-100 based on these criteria:
+
+VISUAL CLARITY (0-100): How well the prompt defines the visual identity and appearance.
+- 0-25: No visual description. "Make something pretty" or no mention of appearance.
+- 26-50: Basic visual mention ("dark mode", "charts") but no specifics on colors, typography, spacing, layout, or aesthetic direction.
+- 51-75: Some visual direction (color scheme mentioned, layout type named) but missing details on typography, spacing, component styling, or emotional tone.
+- 76-100: Complete visual specification — color palette, typography scale, spacing system, layout grid, component styles, visual hierarchy, and emotional tone all defined.
+
+INTERACTION DEFINITION (0-100): How well the prompt defines user behaviors, actions, and feedback.
+- 0-25: No interaction described. No mention of how users engage with the interface.
+- 26-50: Mentions basic actions (click, submit) but no gestures, feedback patterns, animations, or state transitions.
+- 51-75: Defines key interactions (tap, swipe) and some feedback, but missing micro-interactions, transitions, or edge-case behaviors.
+- 76-100: Comprehensive interaction spec — gestures, hover states, click behaviors, drag patterns, loading indicators, success/error feedback, animations, and micro-interactions all defined.
+
+CONTENT STRUCTURE (0-100): How well the prompt defines information hierarchy and content organization.
+- 0-25: No content organization. No mention of what information goes where or how it's prioritized.
+- 26-50: Mentions content types ("charts", "data") but no hierarchy, ordering, grouping, or prioritization.
+- 51-75: Defines primary content areas and some hierarchy, but missing content flow, data relationships, or secondary content handling.
+- 76-100: Complete content architecture — information hierarchy, content order, data groupings, primary vs. secondary content, labeling, and categorization all specified.
+
+EXPERIENCE FLOW (0-100): How well the prompt defines navigation, states, and user journey.
+- 0-25: No flow defined. No mention of screens, pages, navigation, or user journey.
+- 26-50: Mentions navigation type but no states, transitions, or user flow definitions.
+- 51-75: Defines navigation and some states (loading, success) but missing error handling, empty states, or transition flow.
+- 76-100: Complete experience map — navigation structure, all states (empty, loading, error, success, onboarding), screen transitions, user journey steps, edge cases, and accessibility flows defined.
+
+EXAMPLE ANALYSES (for reference, these are the expected quality levels):
+
+Example A — Vague prompt: "Make a dashboard"
+→ Visual clarity: 20, Interaction definition: 15, Content structure: 20, Experience flow: 15, Overall: ~18
+Reasoning: No visual details, no interaction patterns, no content hierarchy, no flow defined.
+
+Example B — Moderate prompt: "Design a dashboard with charts and a sidebar"
+→ Visual clarity: 45, Interaction definition: 35, Content structure: 40, Experience flow: 30, Overall: ~38
+Reasoning: Some visual and structural hints but missing specifics on styling, interactions, content details, and states.
+
+Example C — Strong prompt: "Design a dark-mode analytics dashboard with a left sidebar navigation, real-time line and bar charts using a blue and gray color palette, card-based layout with 16px spacing, hover-to-expand widgets, smooth slide transitions between views, empty state illustrations, error toast notifications, and a three-step onboarding flow"
+→ Visual clarity: 85, Interaction definition: 80, Content structure: 75, Experience flow: 85, Overall: ~82
+Reasoning: Complete visual identity, rich interactions, defined content structure, and comprehensive flow.
+
+ANALYZE THE FOLLOWING PROMPT and return ONLY valid JSON, no markdown, no text outside the JSON block:
+
+{
+  "overall": <number 0-100>,
+  "dimensions": {
+    "visual_clarity": {"score": <0-100>, "explanation": "One specific sentence explaining the score and what's missing or present", "evidence": "exact short quote from the prompt supporting this score, or null"},
+    "interaction_definition": {"score": <0-100>, "explanation": "One specific sentence explaining the score and what's missing or present", "evidence": "exact short quote from the prompt supporting this score, or null"},
+    "content_structure": {"score": <0-100>, "explanation": "One specific sentence explaining the score and what's missing or present", "evidence": "exact short quote from the prompt supporting this score, or null"},
+    "experience_flow": {"score": <0-100>, "explanation": "One specific sentence explaining the score and what's missing or present", "evidence": "exact short quote from the prompt supporting this score, or null"}
+  },
+${wantQuestions ? ANALYSIS_QUESTIONS_BLOCK : '  "questions": []'},
+  "scope_warning": null
+}
+
+${wantQuestions ? ANALYSIS_RULES_BLOCK + '\n\n' : ''}SCOPE CHECK: if the request bundles 2 or more unrelated deliverables (e.g. a dashboard AND a landing page), set "scope_warning" to one sentence naming them and recommending separate briefs; otherwise leave it null.
+${hasImage ? 'A reference image is attached alongside this prompt — factor its visible layout, style, and content into your scores, and reference it in questions where relevant.\n\n' : ''}Prompt to analyze: "${promptText}"
+
+Return ONLY valid JSON.`;
+  }
+
+  function weightedOverall(dims) {
+    return Math.round(
+      dims.visual_clarity.score * 0.3 + dims.interaction_definition.score * 0.25 + dims.content_structure.score * 0.2 + dims.experience_flow.score * 0.25
+    );
+  }
+
+  async function requestAnalysis(promptText, wantQuestions = true, hasImage = false) {
+    const response = await callOllama(buildAnalysisPrompt(promptText, wantQuestions, hasImage), SYSTEM_ANALYSIS, true);
+    const result = parseJSONFromResponse(response);
+
+    if (result && !result.dimensions) {
+      const flatKeys = ['visual_clarity', 'interaction_definition', 'content_structure', 'experience_flow'];
+      if (flatKeys.some(k => result[k] !== undefined)) {
+        result.dimensions = {
+          visual_clarity: result.visual_clarity,
+          interaction_definition: result.interaction_definition,
+          content_structure: result.content_structure,
+          experience_flow: result.experience_flow
+        };
+      }
+    }
+
+    if (!result || !result.dimensions) {
+      throw new Error('Could not parse analysis result from model');
+    }
+
+    const dims = normalizeDims(result.dimensions);
+    const overall = result.overall || weightedOverall(dims);
+    const scopeWarning = (typeof result.scope_warning === 'string' && result.scope_warning.trim()) ? result.scope_warning.trim() : null;
+    const nq = normalizeQuestions(result.questions, dims);
+    return { dims, overall, questions: nq.questions, scopeWarning, provenance: { questionsAuto: nq.autoAdded } };
+  }
+
+  const VAGUE_TERMS = ['improve', 'polish', 'better', 'best', 'nice', 'modern', 'clean', 'fix', 'update', 'tweak', 'revamp', 'enhance', 'optimize', 'looks off', 'make it pop'];
+
+  function detectVagueTerms(prompt) {
+    const found = [];
+    VAGUE_TERMS.forEach(term => {
+      if (new RegExp('\\b' + term + '\\b', 'i').test(prompt) && !found.includes(term)) {
+        found.push(term);
+      }
+    });
+    return found.slice(0, 6);
+  }
+
+  function renderAnalysisNotes(vagueTerms, scopeWarning) {
+    const rows = [];
+    if (vagueTerms.length) {
+      rows.push(`<div class="note-row" role="note"><span>⚠ Vague wording detected: <b>${vagueTerms.map(escapeHtml).join(', ')}</b> — pin these down in the questions step.</span></div>`);
+    }
+    if (scopeWarning) {
+      rows.push(`<div class="note-row" role="note"><span>⚠ Scope: ${escapeHtml(scopeWarning)}</span></div>`);
+    }
+    $('analysisNotes').innerHTML = rows.join('');
+  }
+
+  const CONFLICT_AXES = [
+    { label: 'theme', values: ['dark mode', 'light mode'] },
+    { label: 'navigation', values: ['sidebar', 'top navigation', 'bottom tab bar', 'bottom bar', 'tab bar', 'modal navigation'] },
+    { label: 'layout', values: ['single page', 'multi-step', 'multi step', 'wizard', 'dashboard layout', 'card layout'] }
+  ];
+
+  function axisHit(text, axis) {
+    const t = String(text || '').toLowerCase();
+    return axis.values.find(v => new RegExp('\\b' + v + '\\b').test(t)) || null;
+  }
+
+  function detectConflicts(prompt, questions, answers) {
+    const out = [];
+    CONFLICT_AXES.forEach(axis => {
+      const t = String(prompt || '').toLowerCase();
+      const hits = axis.values.filter(v => new RegExp('\\b' + v + '\\b').test(t));
+      if (hits.length > 1) out.push(`Your prompt mentions both "${hits[0]}" and "${hits[1]}" for ${axis.label}.`);
+    });
+    (questions || []).forEach((q, i) => {
+      const a = answers[i];
+      if (!a || typeof a !== 'string') return;
+      CONFLICT_AXES.forEach(axis => {
+        const p = axisHit(prompt, axis);
+        const av = axisHit(a, axis);
+        if (p && av && p !== av) out.push(`"${av}" (your answer) conflicts with "${p}" (your prompt) for ${axis.label}.`);
+      });
+    });
+    return [...new Set(out)].slice(0, 4);
+  }
+
+  function renderConflictsFromState() {
+    const box = $('conflictBox');
+    if (!box) return;
+    if (!analysisResult || !analysisResult.questions) { box.innerHTML = ''; return; }
+    const conflicts = detectConflicts($('rawPrompt').value, analysisResult.questions, answers);
+    box.innerHTML = conflicts.map(c => `<div class="note-row" role="note"><span>⚠ ${escapeHtml(c)}</span></div>`).join('');
+  }
+
+  // ---- STEP 1: Analyze via Ollama ----
+  async function runAnalysis() {
+    const prompt = $('rawPrompt').value.trim();
+    if (!prompt) {
+      $('rawPrompt').focus();
+      showToast('Please enter a prompt first.');
+      return;
+    }
+
+    if (isAnalyzing) return;
+    isAnalyzing = true;
+
+    originalTokenCount = estimateTokens(prompt);
+    const cacheKey = analysisCacheKey(prompt, $('exampleInput').value.trim());
+    const analyzeBtn = $('analyzeBtn');
+    setButtonLoading(analyzeBtn, true);
+    showSection('section-analysis');
+    showLoadingInAnalysis();
+
+    if (lastAnalysisCache.hash === cacheKey && lastAnalysisCache.result) {
+      const hit = lastAnalysisCache.result;
+      paintAnalysis(hit.dimensions, hit.overall);
+      analysisResult = hit;
+      answers = new Array(hit.questions.length).fill(null);
+      scoreHistory.push({ overall: hit.overall, at: Date.now(), cached: true });
+      renderScoreHistory();
+      renderAnalysisNotes(detectVagueTerms(prompt), hit.scopeWarning || null);
+      persist();
+      showToast('Reused cached analysis — no tokens spent.');
+      isAnalyzing = false;
+      setButtonLoading(analyzeBtn, false);
+      return;
+    }
+
+    // The analysis prompt template lives in buildAnalysisPrompt().
+
+    try {
+      const { dims, overall, questions, scopeWarning, provenance } = await requestAnalysis(prompt, true, !!refImage);
+      paintAnalysis(dims, overall);
+
+      analysisResult = { dimensions: dims, questions, overall, scopeWarning, provenance };
+      lastAnalysisCache = { hash: cacheKey, result: analysisResult };
+      answers = new Array(questions.length).fill(null);
+      scoreHistory.push({ overall, at: Date.now() });
+      renderScoreHistory();
+
+    } catch (err) {
+      console.error('Analysis failed:', err);
+      showToast(connectionErrorMessage(err, 'Using sample analysis'));
+      const prompt = $('rawPrompt').value.trim();
+      const dims = calculateFallbackScores(prompt);
+      const overall = weightedOverall(dims);
+      paintAnalysis(dims, overall);
+      analysisResult = { dimensions: dims, questions: getFallbackQuestions(), overall: overall, scopeWarning: null, provenance: { questionsAuto: 4 } };
+      answers = new Array(analysisResult.questions.length).fill(null);
+      scoreHistory.push({ overall, at: Date.now() });
+      renderScoreHistory();
+    }
+
+    renderAnalysisNotes(
+      detectVagueTerms($('rawPrompt').value.trim()),
+      (analysisResult && analysisResult.scopeWarning) || null
+    );
+    persist();
+
+    isAnalyzing = false;
+    setButtonLoading(analyzeBtn, false);
+  }
+
+  function animateScore(score, dimension, explanation, evidence) {
+    const el = $(`${dimension}Score`);
+    const bar = $(`${dimension}Bar`);
+    const explEl = $(`${dimension}Explanation`);
+    if (bar) { bar.style.transition = 'none'; bar.style.width = '0%'; }
+    if (el) el.textContent = '0';
+    if (explEl) explEl.textContent = 'Analyzing...';
+
+    requestAnimationFrame(() => {
+      if (bar) { bar.style.transition = 'width 0.8s ease'; bar.style.width = score + '%'; }
+      let current = 0;
+      const step = Math.max(1, Math.round(score / 30));
+      const interval = setInterval(() => {
+        current += step;
+        if (current >= score) {
+          current = score;
+          clearInterval(interval);
+        }
+        if (el) el.textContent = current;
+      }, 25);
+      setTimeout(() => {
+        if (el) el.textContent = score;
+        if (explEl) {
+          explEl.textContent = explanation;
+          if (evidence) {
+            const ev = document.createElement('span');
+            ev.className = 'dimension-evidence';
+            ev.textContent = '\u201C' + evidence + '\u201D';
+            explEl.appendChild(ev);
+          }
+        }
+        if (bar) { bar.style.transition = 'width 0.8s ease'; bar.style.width = score + '%'; }
+      }, 800);
+    });
+  }
+
+  function calculateFallbackScores(prompt) {
+    const len = prompt.length;
+    const lower = prompt.toLowerCase();
+    const hasVisual = ['visual', 'design', 'color', 'style', 'theme', 'dark', 'light', 'layout', 'typography', 'UI', 'interface'].some(w => lower.includes(w.toLowerCase()));
+    const hasInteraction = ['click', 'tap', 'swipe', 'hover', 'scroll', 'drag', 'gesture', 'interact', 'button', 'form', 'input', 'submit'].some(w => lower.includes(w.toLowerCase()));
+    const hasContent = ['content', 'data', 'info', 'text', 'list', 'menu', 'category', 'hierarchy', 'organize'].some(w => lower.includes(w.toLowerCase()));
+    const hasFlow = ['nav', 'flow', 'step', 'page', 'screen', 'route', 'transition', 'journey', 'login', 'signup', 'redirect'].some(w => lower.includes(w.toLowerCase()));
+
+    const visualScore = Math.min(100, 20 + (hasVisual ? 35 : 0) + Math.floor(len / 10));
+    const interactionScore = Math.min(100, 15 + (hasInteraction ? 30 : 0) + Math.floor(len / 12));
+    const contentScore = Math.min(100, 15 + (hasContent ? 30 : 0) + Math.floor(len / 14));
+    const flowScore = Math.min(100, 10 + (hasFlow ? 35 : 0) + Math.floor(len / 11));
+
+    return {
+      visual_clarity: { score: visualScore, explanation: hasVisual ? "Some visual direction is mentioned but needs more specificity on colors, typography, and layout." : "No visual direction is defined — needs clear description of appearance, colors, and layout." },
+      interaction_definition: { score: interactionScore, explanation: hasInteraction ? "Some interaction patterns are hinted at but need more detail on gestures and feedback." : "No interaction patterns are defined — needs clear description of user actions and behaviors." },
+      content_structure: { score: contentScore, explanation: hasContent ? "Some content structure is indicated but needs more hierarchy and organization details." : "No content structure is defined — needs clear information hierarchy and organization." },
+      experience_flow: { score: flowScore, explanation: hasFlow ? "Some flow is implied but needs more detail on navigation, states, and transitions." : "No experience flow is defined — needs navigation paths, states, and user journey." }
+    };
+  }
+
+  function clampScore(v, fallback) {
+    v = Number(v);
+    return Number.isFinite(v) ? Math.min(100, Math.max(0, Math.round(v))) : fallback;
+  }
+
+  // The small model sometimes returns a flat shape ({visual_clarity: 65})
+  // instead of {visual_clarity: {score, explanation}} — normalize both.
+  function normalizeDims(raw) {
+    const fb = {
+      visual_clarity: 'No visual direction detected — needs appearance, colors, and layout.',
+      interaction_definition: 'No interaction patterns detected — needs user actions and feedback.',
+      content_structure: 'No content structure detected — needs information hierarchy.',
+      experience_flow: 'No experience flow detected — needs navigation and states.'
+    };
+    const out = {};
+    ['visual_clarity', 'interaction_definition', 'content_structure', 'experience_flow'].forEach((k, i) => {
+      const d = raw && raw[k];
+      const defaults = [30, 25, 25, 20][i];
+      if (d && typeof d === 'object') {
+        out[k] = { score: clampScore(d.score, defaults), explanation: String(d.explanation || fb[k]), evidence: (typeof d.evidence === 'string' && d.evidence.trim()) ? d.evidence.trim().slice(0, 140) : null };
+      } else {
+        out[k] = { score: clampScore(d, defaults), explanation: fb[k], evidence: null };
+      }
+    });
+    return out;
+  }
+
+  function cleanQuestionText(t) {
+    return String(t || '').replace(/^(Q\s*:\s*|Question\s*\d*\s*:\s*)/i, '').trim();
+  }
+
+  function cleanOption(o) {
+    return String(o || '').replace(/^(A\s*:\s*|Option\s*[A-D0-9]\s*[:.)-]\s*|[A-D]\s*[:.)-]\s+)/i, '').trim();
+  }
+
+  const DIMENSION_FALLBACK_QUESTIONS = {
+    visual_clarity: { text: 'What visual style should this design follow?', options: ['Minimal and clean', 'Bold and colorful', 'Dark mode first'] },
+    interaction_definition: { text: 'How should users primarily interact with this interface?', options: ['Tap to expand', 'Swipe gestures', 'Drag and drop'] },
+    content_structure: { text: 'How should the content be organized?', options: ['Single scrolling page', 'Tabbed sections', 'Card grid'] },
+    experience_flow: { text: 'Which states must the prototype cover?', options: ['Empty, loading, error and success', 'Happy path only', 'Loading and error only'] }
+  };
+
+  // Guarantee exactly 4 clean questions, padding weakest dimensions first.
+  function normalizeQuestions(raw, dims) {
+    const list = (Array.isArray(raw) ? raw : []).map(q => ({
+      text: cleanQuestionText(q && (q.text || q.question)),
+      options: [...new Set(((q && q.options) || []).map(cleanOption).filter(Boolean))].slice(0, 4),
+      hasOther: true,
+      otherPlaceholder: 'Describe your answer...'
+    })).filter(q => q.text && q.options.length >= 2);
+    let autoAdded = 0;
+
+    const order = Object.keys(DIMENSION_FALLBACK_QUESTIONS).sort(
+      (a, b) => (dims[a] ? dims[a].score : 50) - (dims[b] ? dims[b].score : 50)
+    );
+    for (const dim of order) {
+      if (list.length >= 4) break;
+      const fb = DIMENSION_FALLBACK_QUESTIONS[dim];
+      if (!list.some(q => q.text === fb.text)) {
+        list.push({ text: fb.text, options: [...fb.options], hasOther: true, otherPlaceholder: 'Describe your answer...' });
+        autoAdded++;
+      }
+    }
+    return { questions: list.slice(0, 4), autoAdded };
+  }
+
+  function getFallbackQuestions() {
+    return [
+      { text: "What layout approach should be used?", options: ["Single page", "Multi-step wizard", "Dashboard/grid", "Card-based layout"], hasOther: true, otherPlaceholder: "Describe your layout preference..." },
+      { text: "What navigation pattern fits best?", options: ["Sidebar", "Bottom tab bar", "Top navigation", "Modal-based"], hasOther: true, otherPlaceholder: "Describe your navigation preference..." },
+      { text: "What interaction style is expected?", options: ["Tap to expand", "Swipe gestures", "Drag and drop", "Click-to-reveal"], hasOther: true, otherPlaceholder: "Describe your interaction preference..." },
+      { text: "What visual style should the design follow?", options: ["Minimal and clean", "Bold and colorful", "Dark mode first", "Material design"], hasOther: true, otherPlaceholder: "Describe your visual style preference..." }
+    ];
+  }
+
+  // ---- STEP 2: Questions ----
+  function renderQuestions() {
+    const container = $('questionsContainer');
+    container.innerHTML = '';
+    if (!analysisResult || !analysisResult.questions) return;
+
+    analysisResult.questions.forEach((q, i) => {
+      const item = document.createElement('div');
+      item.className = 'question-item';
+      item.setAttribute('role', 'listitem');
+
+      const selectedAnswer = answers[i];
+      let optionsHTML = q.options.map(opt => {
+        const sel = selectedAnswer === opt ? ' selected' : '';
+        return `<button class="option-btn${sel}" data-q="${i}" data-opt="${opt}" role="radio" aria-checked="${selectedAnswer === opt}" tabindex="0">${opt}</button>`;
+      }).join('');
+
+      const otherVisible = selectedAnswer && !q.options.includes(selectedAnswer) ? 'visible' : '';
+      const otherVal = selectedAnswer && !q.options.includes(selectedAnswer) ? selectedAnswer : '';
+
+      item.innerHTML = `
+        <p class="question-text" id="question-${i}">${i + 1}. ${q.text}</p>
+        <div class="options-group" role="radiogroup" aria-labelledby="question-${i}">
+          ${optionsHTML}
+        </div>
+        <div class="option-other ${otherVisible}">
+          <input type="text" placeholder="${q.otherPlaceholder || 'Enter your answer...'}" value="${otherVal}" data-other="${i}" aria-label="${q.text} - other answer">
+        </div>
+      `;
+
+      container.appendChild(item);
+    });
+
+    container.querySelectorAll('.option-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const qi = parseInt(btn.dataset.q);
+        const opt = btn.dataset.opt;
+        answers[qi] = opt;
+        container.querySelectorAll(`[data-q="${qi}"]`).forEach(b => {
+          b.classList.remove('selected');
+          b.setAttribute('aria-checked', 'false');
+        });
+        btn.classList.add('selected');
+        btn.setAttribute('aria-checked', 'true');
+        const otherInput = container.querySelector(`[data-other="${qi}"]`);
+        const otherDiv = otherInput?.closest('.option-other');
+        if (otherDiv) {
+          otherDiv.classList.toggle('visible', !analysisResult.questions[qi].options.includes(opt));
+          if (!analysisResult.questions[qi].options.includes(opt)) otherInput.value = opt;
+          else otherInput.value = '';
+        }
+      });
+    });
+
+    container.querySelectorAll('.option-other input').forEach(input => {
+      input.addEventListener('input', () => {
+        const qi = parseInt(input.dataset.other);
+        answers[qi] = input.value.trim() || null;
+      });
+    });
+
+    const autoN = (analysisResult.provenance && analysisResult.provenance.questionsAuto) || 0;
+    const provEl = $('provenanceNote');
+    if (provEl) provEl.textContent = autoN > 0 ? `${autoN} of ${analysisResult.questions.length} questions auto-suggested for your weakest areas.` : '';
+    renderConflictsFromState();
+  }
+
+  // ---- STEP 3: Compile optimized prompt via Ollama ----
+  async function generateOptimizedPrompt() {
+    if (!analysisResult || !analysisResult.questions) {
+      showToast('No analysis data available. Please analyze first.');
+      return;
+    }
+
+    const unanswered = answers.filter(a => a === null);
+
+    if (isCompiling) return;
+    isCompiling = true;
+
+    const compileBtn = $('compileBtn');
+    setButtonLoading(compileBtn, true);
+
+    const prompt = $('rawPrompt').value.trim();
+    const userExample = $('exampleInput').value.trim();
+    const exampleBlock = userExample ? `<example>\n${userExample}\n</example>` : '';
+    const imageReq = refImage ? '- Follow the attached reference image\'s visual language for layout and style.' : '';
+
+    let questionsSummary = '';
+    analysisResult.questions.forEach((q, i) => {
+      const ans = answers[i];
+      if (ans && ans.trim()) {
+        questionsSummary += `${i + 1}. ${q.text}: ${ans}\n`;
+      }
+    });
+    if (!questionsSummary.trim()) {
+      questionsSummary = '(none — the original prompt was already detailed, no clarification needed)';
+    }
+
+    const optimizePrompt = `Generate an optimized UI/UX design prompt for Claude Code prototyping. Return ONLY the optimized prompt text, structured with XML tags exactly as specified below.
+
+<original_request>
+"${prompt}"
+</original_request>
+
+<clarifications>
+${questionsSummary}
+</clarifications>
+${exampleBlock}
+
+Requirements for the optimized prompt:
+- Structure it with these XML sections in order: <role>, <goal>, <context>, <constraints>, <scope>, <acceptance_criteria>, <output_format>.
+- <role>: one line setting Claude Code as a senior product designer building a clickable prototype.
+- <goal>: what to design, in one specific paragraph incorporating the original request and clarifications.
+- <context>: visual intent (layout, style, color approach), interaction patterns and user behaviors, content hierarchy and information architecture, experience flow (navigation, states, transitions).
+- <constraints>: prominent bulleted "Do NOT" list — prototype only, no technology/code/backend, no redesigning unnamed screens. Constraints must be bullets, never buried in prose.
+- <scope>: named screens in scope, states to cover (empty, loading, error, success), what is explicitly out of scope, and content assumptions.
+- <acceptance_criteria>: 3-5 testable criteria in Given/When/Then form (e.g. "Given the task list is empty, When the screen loads, Then an illustrated empty state with a primary CTA is shown"). Never vague criteria like "clean" or "modern".
+- <output_format>: what Claude Code must return (screens, states, notes).
+${imageReq}
+- Scope guard: "If anything is ambiguous, choose the simplest interpretation consistent with this brief and list each assumption under <scope>."
+- Self-contained: the brief must stand alone with no references to prior conversation.
+- Replace vague verbs from the original request ("improve", "polish", "modern") with concrete visual/interaction specs — never carry them into the brief.
+- Order the build in phases in <output_format>: 1) structure/layout, 2) styling/polish, 3) interactions and states — each verifiable against <acceptance_criteria>.
+- Output only the seven brief sections — do not echo <original_request> or <clarifications>, do not wrap in code fences, no extra wrapper tags.
+- Keep it tight: ~250 words max, bullets over paragraphs (token-efficient output).
+- Focus entirely on the user interface and user experience, not on technology, code, or implementation.
+
+Return ONLY the optimized prompt. Do not add any introductory text, comments, or explanation.`;
+
+    try {
+      const response = await callOllama(optimizePrompt, 'You are a UI/UX prompt engineer specializing in design prototypes for Claude Code. Generate clean, structured prompts with XML tags that describe visual and experiential aspects only. Return only the prompt content, no preamble. Never mention technology, code, frameworks, APIs, or databases.', false);
+
+      let briefText = response;
+      let repairFixed = 0;
+      let gate = validateBrief(briefText);
+      if (gate.passedCount > 0 && !gate.passed && briefText.trim()) {
+        try {
+          const failed = gate.checks.filter(c => !c.pass).map(c => `- ${c.label} (${c.detail})`).join('\n');
+          const repaired = await callOllama(
+            `Fix ONLY the failed items below in this Claude Code design brief. Keep the same XML sections and everything that already passes.\n\nFailed items:\n${failed}\n\nBrief:\n${briefText}\n\nReturn ONLY the corrected brief, no preamble.`,
+            'You are a UI/UX prompt engineer. Fix only the listed issues. Return only the corrected brief, no preamble.',
+            false
+          );
+          const gate2 = validateBrief(repaired);
+          if (gate2.passedCount > gate.passedCount) {
+            repairFixed = gate2.passedCount - gate.passedCount;
+            briefText = repaired;
+            gate = gate2;
+          }
+        } catch (e) {
+          console.error('Repair pass failed:', e);
+        }
+      }
+
+      $('tokenCount').textContent = `~${estimateTokens(briefText)} tokens`;
+      const reduction = Math.round((1 - estimateTokens(briefText) / originalTokenCount) * 100);
+      $('reductionStat').textContent = reduction > 0 ? `-${Math.abs(reduction)}% tokens` : `+${Math.abs(reduction)}% tokens`;
+
+      $('promptOutput').innerHTML = highlightPrompt(briefText);
+      showSection('section-optimized');
+      renderGate(gate);
+
+      // Save to history
+      addHistoryEntry({
+        id: Date.now().toString(36) + Math.random().toString(36).slice(2, 6),
+        tag: $('tagInput') ? $('tagInput').value.trim() : '',
+        prompt: prompt,
+        example: userExample,
+        brief: briefText,
+        score: analysisResult.overall,
+        date: new Date().toISOString(),
+        answers: answers.slice()
+      });
+      if (repairFixed > 0) {
+        const rn = $('repairNote');
+        rn.textContent = `Auto-repair fixed ${repairFixed} check${repairFixed === 1 ? '' : 's'} — review the checklist below.`;
+        rn.hidden = false;
+      } else {
+        $('repairNote').hidden = true;
+      }
+
+      if ($('verifyToggle') && $('verifyToggle').checked) {
+        try {
+          const rescored = await requestAnalysis(briefText, false);
+          renderDelta({ dims: analysisResult.dimensions, overall: analysisResult.overall }, rescored);
+        } catch (e) {
+          console.error('Rescore failed:', e);
+          $('deltaPanel').hidden = true;
+        }
+      } else {
+        $('deltaPanel').hidden = true;
+      }
+
+    } catch (err) {
+      console.error('Optimization failed:', err);
+      showToast(connectionErrorMessage(err, 'Using fallback prompt'));
+      const fallback = generateFallbackPrompt(prompt, userExample);
+      $('tokenCount').textContent = `~${estimateTokens(fallback)} tokens`;
+      const reduction = Math.round((1 - estimateTokens(fallback) / originalTokenCount) * 100);
+      $('reductionStat').textContent = reduction > 0 ? `-${Math.abs(reduction)}% tokens` : `+${Math.abs(reduction)}% tokens`;
+      $('promptOutput').innerHTML = highlightPrompt(fallback);
+      showSection('section-optimized');
+      renderGate(validateBrief(fallback));
+
+      addHistoryEntry({
+        id: Date.now().toString(36) + Math.random().toString(36).slice(2, 6),
+        tag: $('tagInput') ? $('tagInput').value.trim() : '',
+        prompt: prompt,
+        example: userExample,
+        brief: fallback,
+        score: analysisResult ? analysisResult.overall : 0,
+        date: new Date().toISOString(),
+        answers: answers.slice()
+      });
+    }
+
+    isCompiling = false;
+    setButtonLoading(compileBtn, false);
+  }
+
+  function escapeHtml(s) {
+    return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  }
+
+  function stripCodeFences(t) {
+    return String(t).replace(/^\s*```[\w-]*\s*\n?/, '').replace(/\n?\s*```\s*$/, '').trim();
+  }
+
+  function stripOuterPromptWrapper(t) {
+    return String(t).replace(/^\s*<prompt>\s*([\s\S]*?)\s*<\/prompt>\s*$/, '$1').trim();
+  }
+
+  function highlightPrompt(text) {
+    // Order matters: the quote regex must run BEFORE any <span> tags exist,
+    // otherwise it matches the quotes inside class="..." and corrupts the HTML.
+    let out = escapeHtml(stripOuterPromptWrapper(stripCodeFences(text)));
+    out = out
+      .replace(/("[^"\n]*"|'[^'\n]*'|`[^`\n]*`)/g, '<span class="str">$1</span>')
+      .replace(/^(#{1,6}\s.*)$/gm, '<span class="cm">$1</span>')
+      .replace(/(&lt;\/?[\w-]+&gt;)/g, '<span class="kw">$1</span>')
+      .replace(/(?<!["\w])(layout|style|color|design|interface|interaction|content|navigation|flow|state|visual|experience|structure|transition|pattern|hierarchy|component)(\s)/gi, '<span class="kw">$1$2</span>')
+      .replace(/\b([\w-]+)\s*\(/g, '<span class="fn">$1</span>(');
+    return out;
+  }
+
+  const BRIEF_SECTIONS = ['role', 'goal', 'context', 'constraints', 'scope', 'acceptance_criteria', 'output_format'];
+  const BRIEF_BANNED_TERMS = ['react', 'typescript', 'javascript', 'python', 'database', 'sql', 'backend', 'framework', 'npm', 'docker', 'kubernetes'];
+  const BRIEF_WORD_LIMIT = 300;
+
+  function briefSectionBody(text, name, nextStart) {
+    const m = text.match(new RegExp('<' + name + '>', 'i'));
+    if (!m) return '';
+    const start = m.index + m[0].length;
+    const end = nextStart >= 0 ? nextStart : text.length;
+    return text.slice(start, end);
+  }
+
+  function validateBrief(text) {
+    const checks = [];
+    const t = String(text || '');
+
+    const idx = BRIEF_SECTIONS.map(name => {
+      const m = t.match(new RegExp('<' + name + '>', 'i'));
+      return m ? m.index : -1;
+    });
+    const missing = BRIEF_SECTIONS.filter((_, i) => idx[i] < 0);
+    const ordered = idx.every((v, i) => v >= 0 && (i === 0 || v > idx[i - 1]));
+    checks.push({
+      label: 'All 7 XML sections present in order',
+      pass: ordered,
+      detail: missing.length ? `missing: ${missing.join(', ')}` : 'sections out of order'
+    });
+
+    const constraintsBody = briefSectionBody(t, 'constraints', idx[4]);
+    const bullets = constraintsBody.split('\n').filter(l => /^\s*[-*]\s+\S/.test(l));
+    const hasDoNot = /do\s*not/i.test(constraintsBody);
+    checks.push({
+      label: 'Do-NOT constraints as prominent bullets',
+      pass: hasDoNot && bullets.length >= 2,
+      detail: `found ${bullets.length} bullets${hasDoNot ? '' : ', no "Do NOT"'}`
+    });
+
+    const accBody = briefSectionBody(t, 'acceptance_criteria', idx[6]);
+    const givens = (accBody.match(/^\s*(?:[-*]\s*)?given\b/gim) || []).length;
+    checks.push({
+      label: 'At least 3 Given/When/Then criteria',
+      pass: givens >= 3,
+      detail: `found ${givens}`
+    });
+
+    const words = t.split(/\s+/).filter(Boolean).length;
+    checks.push({
+      label: `Brief within ${BRIEF_WORD_LIMIT} words`,
+      pass: words <= BRIEF_WORD_LIMIT,
+      detail: `${words} words`
+    });
+
+    const fence = /```/.test(t);
+    const echo = /<(original_request|clarifications)>/.test(t);
+    checks.push({
+      label: 'No code fences or echoed scaffolding',
+      pass: !fence && !echo,
+      detail: [fence ? 'code fence found' : '', echo ? 'scaffolding echoed' : ''].filter(Boolean).join(', ')
+    });
+
+    const noConstraints = t.replace(/<constraints>[\s\S]*?(<\/constraints>|<scope>|$)/i, '');
+    const found = BRIEF_BANNED_TERMS.filter(w => new RegExp('\\b' + w + '\\b', 'i').test(noConstraints));
+    checks.push({
+      label: 'No tech terms outside constraints',
+      pass: found.length === 0,
+      detail: found.length ? `found: ${found.join(', ')}` : ''
+    });
+
+    const passedCount = checks.filter(c => c.pass).length;
+    return { checks, passedCount, passed: passedCount === checks.length };
+  }
+
+  function renderGate(result) {
+    $('gateRows').innerHTML = result.checks.map(c =>
+      `<div class="gate-item" role="listitem"><span class="gate-check"><span class="${c.pass ? 'mark-pass' : 'mark-fail'}" aria-hidden="true">${c.pass ? '✓' : '✗'}</span><span class="sr-only">${c.pass ? 'Passed: ' : 'Failed: '}</span> ${escapeHtml(c.label)}</span>${c.pass ? '' : `<span class="gate-detail">${escapeHtml(c.detail)}</span>`}</div>`
+    ).join('');
+    $('gateTitle').textContent = `Brief acceptance gate — ${result.passedCount}/${result.checks.length} passed`;
+    $('gatePanel').hidden = false;
+  }
+
+  function renderDelta(before, after) {
+    const names = {
+      visual_clarity: 'Visual clarity',
+      interaction_definition: 'Interaction definition',
+      content_structure: 'Content structure',
+      experience_flow: 'Experience flow'
+    };
+    const row = (label, b, a, total) => {
+      const d = a - b;
+      const cls = d >= 0 ? 'up' : 'down';
+      const sign = d > 0 ? '+' : '';
+      return `<div class="delta-row${total ? ' delta-total' : ''}" role="listitem"><span>${label}</span><span class="delta-scores"><b>${b}</b><span aria-hidden="true"> → </span><b>${a}</b> <em class="${cls}">${sign}${d}</em></span></div>`;
+    };
+    let html = Object.keys(names).map(k => row(names[k], before.dims[k].score, after.dims[k].score, false)).join('');
+    html += row('Overall', before.overall, after.overall, true);
+    $('deltaRows').innerHTML = html;
+    $('deltaPanel').hidden = false;
+  }
+
+  function generateFallbackPrompt(original, userExample) {
+    const goal = original.charAt(0).toUpperCase() + original.slice(1);
+    const base = `<role>
+You are a senior product designer building a clickable prototype in Claude Code.
+</role>
+
+<goal>
+${goal}.
+</goal>
+
+<context>
+- Visual intent: define color palette, typography, spacing, and visual hierarchy before building.
+- Interaction patterns: tap behavior, hover states, scroll behavior, transitions, and micro-interactions.
+- Content hierarchy: primary vs. secondary content, order, and grouping.
+- Experience flow: navigation structure and screen transitions.
+</context>
+
+<constraints>
+- Do NOT implement any technology, code, backend, or data layer — prototype only.
+- Do NOT redesign screens not named in <scope>.
+- Do NOT add features not requested; keep every decision reversible.
+</constraints>
+
+<scope>
+- Screens in scope: main screen implied by the goal above.
+- States to cover: empty, loading, error, success.
+- Out of scope: everything not named here.
+- Assumptions: list any interpretation you had to make.
+</scope>
+
+<acceptance_criteria>
+- Given each screen in scope, When it renders, Then spacing, hierarchy, and navigation match this brief.
+- Given an empty data set, When the screen loads, Then an illustrated empty state with a primary CTA is shown.
+- Given a failed load, When the error occurs, Then a concise error message with a retry action is shown.
+</acceptance_criteria>
+
+<output_format>
+Build in phases, verifying each against <acceptance_criteria> before the next:
+1) Structure/layout — screens, grid, navigation, content placement.
+2) Styling/polish — palette, typography, spacing, component styles.
+3) Interactions and states — gestures, transitions, empty/loading/error/success.
+Return all screens in scope, all states, plus a short note listing assumptions made.
+</output_format>`;
+    return userExample ? base + `\n\n<example>\n${userExample}\n</example>` : base;
+  }
+
+  function copyPrompt() {
+    const text = $('promptOutput').textContent;
+    navigator.clipboard.writeText(text).then(() => {
+      const btn = $('copyBtn');
+      btn.textContent = 'Copied!';
+      btn.classList.add('copied');
+      showToast('Prompt copied to clipboard.');
+      setTimeout(() => {
+        btn.textContent = 'Copy';
+        btn.classList.remove('copied');
+      }, 2000);
+    }).catch(() => {
+      showToast('Failed to copy. Please select and copy manually.');
+    });
+  }
+
+  function resetApp() {
+    $('rawPrompt').value = '';
+    $('exampleInput').value = '';
+    clearRefImage();
+    updateCharCount();
+    $('scoreNumber').textContent = '0';
+    $('scoreArc').setAttribute('stroke-dasharray', '0 377');
+    ['goal', 'context', 'constraints', 'acceptance'].forEach(d => {
+      $(`${d}Score`).textContent = '0';
+      $(`${d}Bar`).style.width = '0%';
+      $(`${d}Bar`).style.transition = 'none';
+      const explId = d.charAt(0).toUpperCase() + d.slice(1) + 'Explanation';
+      const explEl = document.getElementById(explId);
+      if (explEl) explEl.textContent = 'Analyzing...';
+    });
+    answers = [];
+    analysisResult = null;
+    scoreHistory = [];
+    lastAnalysisCache = { hash: null, result: null };
+    $('deltaPanel').hidden = true;
+    $('gatePanel').hidden = true;
+    $('analysisNotes').innerHTML = '';
+    $('repairNote').hidden = true;
+    const sh = $('scoreHistory'); if (sh) sh.textContent = '';
+    const pn = $('provenanceNote'); if (pn) pn.textContent = '';
+    const cb = $('conflictBox'); if (cb) cb.innerHTML = '';
+    try { localStorage.removeItem(STORAGE_KEY); } catch (e) {}
+    showSection('section-input');
+  }
+
+  function showToast(message) {
+    const toast = $('toast');
+    toast.textContent = message;
+    toast.classList.add('visible');
+    setTimeout(() => toast.classList.remove('visible'), 2500);
+  }
+
+  function clearRefImage() {
+    refImage = null;
+    $('imageInput').value = '';
+    $('imagePreview').hidden = true;
+    $('imagePreviewImg').removeAttribute('src');
+  }
+
+  function handleImageSelect(e) {
+    const file = e.target.files && e.target.files[0];
+    if (!file) return;
+    const okTypes = ['image/png', 'image/jpeg', 'image/webp'];
+    if (!okTypes.includes(file.type)) {
+      showToast('Please choose a PNG, JPEG, or WebP image.');
+      clearRefImage();
+      return;
+    }
+    if (file.size > 4 * 1024 * 1024) {
+      showToast('Image is too large — max 4 MB.');
+      clearRefImage();
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = () => {
+      const dataUrl = String(reader.result || '');
+      const b64 = dataUrl.split(',')[1] || '';
+      if (!b64) {
+        showToast('Could not read that image.');
+        clearRefImage();
+        return;
+      }
+      refImage = { mime: file.type, b64 };
+      $('imagePreviewImg').src = dataUrl;
+      $('imagePreviewImg').alt = `Reference image preview: ${file.name}`;
+      $('imagePreview').hidden = false;
+    };
+    reader.onerror = () => {
+      showToast('Could not read that image.');
+      clearRefImage();
+    };
+    reader.readAsDataURL(file);
+  }
+
+  $('rawPrompt').addEventListener('input', updateCharCount);
+  $('analyzeBtn').addEventListener('click', runAnalysis);
+  $('editPromptBtn').addEventListener('click', () => showSection('section-input'));
+  $('questionsContainer').addEventListener('click', () => { renderConflictsFromState(); persist(); });
+  $('questionsContainer').addEventListener('input', () => { renderConflictsFromState(); persist(); });
+
+  // Sidebar
+  $('historyToggle').addEventListener('click', openSidebar);
+  $('sidebarClose').addEventListener('click', closeSidebar);
+  $('sidebarOverlay').addEventListener('click', closeSidebar);
+  $('sidebarClear').addEventListener('click', () => { if (confirm('Clear all prompt history?')) clearHistory(); });
+  $('sidebarBody').addEventListener('click', (e) => {
+    const del = e.target.closest('[data-delete]');
+    if (del) { e.stopPropagation(); deleteHistoryEntry(del.dataset.delete); return; }
+    const item = e.target.closest('.sidebar-item');
+    if (item) loadFromHistory(item.dataset.id);
+  });
+  $('sidebarBody').addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' || e.key === ' ') {
+      const item = e.target.closest('.sidebar-item');
+      if (item) { e.preventDefault(); loadFromHistory(item.dataset.id); }
+    }
+  });
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && $('sidebar').classList.contains('open')) { closeSidebar(); return; }
+  });
+
+  document.addEventListener('keydown', (e) => {
+    const modEnter = (e.metaKey || e.ctrlKey) && e.key === 'Enter';
+    if (modEnter) {
+      if ($('section-input').classList.contains('visible')) { e.preventDefault(); runAnalysis(); }
+      else if ($('section-questions').classList.contains('visible')) { e.preventDefault(); generateOptimizedPrompt(); }
+      return;
+    }
+    if (e.key === 'Escape') {
+      const t = document.activeElement;
+      if (t && /INPUT|TEXTAREA/.test(t.tagName)) { t.blur(); return; }
+      if ($('section-optimized').classList.contains('visible')) showSection('section-questions');
+      else if ($('section-questions').classList.contains('visible')) showSection('section-analysis');
+      else if ($('section-analysis').classList.contains('visible')) showSection('section-input');
+      return;
+    }
+    if ((e.key === 'ArrowRight' || e.key === 'ArrowDown' || e.key === 'ArrowLeft' || e.key === 'ArrowUp') && document.activeElement && document.activeElement.classList.contains('option-btn')) {
+      e.preventDefault();
+      const group = [...document.querySelectorAll(`[data-q="${document.activeElement.dataset.q}"]`)];
+      const i = group.indexOf(document.activeElement);
+      const n = group[(i + (e.key === 'ArrowRight' || e.key === 'ArrowDown' ? 1 : group.length - 1)) % group.length];
+      if (n) n.focus();
+    }
+  });
+  $('nextBtn').addEventListener('click', () => {
+    if (!analysisResult || !analysisResult.dimensions) {
+      showToast('Analysis not complete. Please wait or check Ollama connection.');
+      return;
+    }
+    const dims = analysisResult.dimensions;
+    const allFilled = ['visual_clarity', 'interaction_definition', 'content_structure', 'experience_flow'].every(d => dims[d].score > 0);
+    if (!allFilled) {
+      showToast('Analysis incomplete — some dimensions have no score.');
+      return;
+    }
+    if ((analysisResult.overall || 0) >= SKIP_QUESTIONS_THRESHOLD) {
+      showToast('Prompt is already strong — compiling directly.');
+      answers = [];
+      analysisResult.questions = [];
+      generateOptimizedPrompt();
+      return;
+    }
+    renderQuestions();
+    showSection('section-questions');
+  });
+  $('compileBtn').addEventListener('click', generateOptimizedPrompt);
+  $('copyBtn').addEventListener('click', copyPrompt);
+  $('newBtn').addEventListener('click', resetApp);
+
+  function restore() {
+    let s = null;
+    try { s = JSON.parse(localStorage.getItem(STORAGE_KEY)); } catch (e) { return; }
+    if (!s || s.v !== 1) return;
+    let restored = false;
+    if (typeof s.rawPrompt === 'string' && s.rawPrompt) {
+      $('rawPrompt').value = s.rawPrompt;
+      updateCharCount();
+      restored = true;
+    }
+    if (typeof s.exampleInput === 'string') $('exampleInput').value = s.exampleInput;
+    if (typeof s.tagInput === 'string' && $('tagInput')) $('tagInput').value = s.tagInput;
+    if (Array.isArray(s.scoreHistory)) scoreHistory = s.scoreHistory;
+    if (s.analysisCache) lastAnalysisCache = s.analysisCache;
+    if (s.analysis && s.analysis.dimensions) {
+      analysisResult = s.analysis;
+      const n = analysisResult.questions.length;
+      answers = analysisResult.questions.map((_, i) => (Array.isArray(s.answers) && typeof s.answers[i] === 'string') ? s.answers[i] : null);
+      paintAnalysis(analysisResult.dimensions, analysisResult.overall);
+      renderAnalysisNotes(detectVagueTerms(s.rawPrompt || ''), analysisResult.scopeWarning || null);
+      renderScoreHistory();
+      renderQuestions();
+      renderConflictsFromState();
+      restored = true;
+      if (s.brief && s.step === 'section-optimized') {
+        $('promptOutput').innerHTML = highlightPrompt(s.brief);
+        $('tokenCount').textContent = `~${estimateTokens(s.brief)} tokens`;
+        const baseTokens = estimateTokens(s.rawPrompt || s.brief);
+        const red = Math.round((1 - estimateTokens(s.brief) / baseTokens) * 100);
+        $('reductionStat').textContent = red > 0 ? `-${Math.abs(red)}% tokens` : `+${Math.abs(red)}% tokens`;
+        renderGate(validateBrief(s.brief));
+        if (s.repairNote) {
+          $('repairNote').textContent = s.repairNote;
+          $('repairNote').hidden = false;
+        }
+        showSection('section-optimized');
+      } else if (s.step === 'section-questions') {
+        showSection('section-questions');
+      } else {
+        showSection('section-analysis');
+      }
+    }
+    if (restored) {
+      showToast(s.hadImage ? 'Previous session restored (reference image was not saved — re-attach it).' : 'Previous session restored.');
+    }
+  }
+
+  async function checkBackend() {
+    const dot = $('statusDot');
+    const txt = $('statusText');
+    const set = (cls, msg) => { dot.className = 'status-dot ' + cls; txt.textContent = msg; };
+    if (window.location.protocol === 'file:') {
+      set('offline', 'Offline — open via http://localhost:8080');
+      return;
+    }
+    try {
+      const res = await fetch('/api/health', { method: 'GET' });
+      if (!res.ok) throw new Error('health ' + res.status);
+      const h = await res.json();
+      if (h.ready) {
+        set('online', h.backend === 'gemini' ? `Gemini ready (${h.model})` : 'Ollama ready');
+      } else {
+        set('offline', 'Backend unreachable — fallback mode');
+      }
+    } catch (e) {
+      set('offline', 'Proxy unreachable — start proxy.py');
+    }
+  }
+
+  window.addEventListener('DOMContentLoaded', () => {
+    $('rawPrompt').value = samplePrompt;
+    updateCharCount();
+    checkBackend();
+    renderSidebar();
+    if (window.location.protocol === 'file:') {
+      showToast('You opened index.html directly. Run "python3 proxy.py" and open http://localhost:8080 or Analyze will fail.');
+    }
+    restore();
+  });
+</script>
+</body>
+</html>
