@@ -2740,7 +2740,7 @@ Return all screens in scope, all states, plus a short note listing assumptions m
       if (!res.ok) throw new Error('health ' + res.status);
       const h = await res.json();
       if (h.ready) {
-        set('online', h.backend === 'gemini' ? `Gemini ready (${h.model})` : 'Ollama ready');
+        set('online', h.backend === 'groq' ? `Groq ready (${h.model})` : h.backend === 'xai' ? `xAI ready (${h.model})` : h.backend === 'gemini' ? `Gemini ready (${h.model})` : 'Ollama ready');
       } else {
         set('offline', 'Backend unreachable — fallback mode');
       }

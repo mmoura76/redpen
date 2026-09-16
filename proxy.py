@@ -8,9 +8,15 @@ OLLAMA_URL = "http://localhost:11434"
 PORT = int(os.environ.get("PORT", 8080))
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
-# Gemini backend (Google AI Studio, free tier). Set GEMINI_API_KEY to enable.
-# When set, /api/generate is translated to the Gemini API and the key never
-# leaves this server process. When unset, requests go to local Ollama.
+# Backend priority: Groq > xAI > Gemini > Ollama
+GROQ_API_KEY = os.environ.get("GROQ_API_KEY", "").strip()
+GROQ_MODEL = os.environ.get("GROQ_MODEL", "qwen/qwen3.8-27b").strip() or "qwen/qwen3.8-27b"
+GROQ_URL = "https://api.groq.com/openai/v1/chat/completions"
+
+XAI_API_KEY = os.environ.get("XAI_API_KEY", "").strip()
+XAI_MODEL = os.environ.get("XAI_MODEL", "grok-2-latest").strip() or "grok-2-latest"
+XAI_URL = "https://api.x.ai/v1/chat/completions"
+
 GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY", "").strip()
 GEMINI_MODEL = os.environ.get("GEMINI_MODEL", "gemini-2.5-flash").strip() or "gemini-2.5-flash"
 GEMINI_URL = f"https://generativelanguage.googleapis.com/v1beta/models/{GEMINI_MODEL}:generateContent"
@@ -30,6 +36,84 @@ def forward_ollama(body):
         return 502, json.dumps({"error": f"Ollama error {e.code}: {detail}"}).encode()
     except Exception as e:
         return 502, json.dumps({"error": f"Ollama unreachable: {e}"}).encode()
+
+
+def forward_groq(payload):
+    prompt = payload.get("prompt", "")
+    system = payload.get("system", "")
+    options = payload.get("options") or {}
+    try:
+        temperature = float(options.get("temperature", 0.1))
+    except (TypeError, ValueError):
+        temperature = 0.1
+    messages = []
+    if system:
+        messages.append({"role": "system", "content": system})
+    messages.append({"role": "user", "content": prompt})
+    req_body = {
+        "model": GROQ_MODEL,
+        "messages": messages,
+        "temperature": temperature,
+        "max_tokens": 4096,
+    }
+    if payload.get("response_format") == "json":
+        req_body["response_format"] = {"type": "json_object"}
+    req = urllib.request.Request(
+        GROQ_URL,
+        data=json.dumps(req_body).encode(),
+        headers={'Content-Type': 'application/json', 'Authorization': f'Bearer {GROQ_API_KEY}', 'User-Agent': 'RedPen/1.0'}
+    )
+    try:
+        with urllib.request.urlopen(req, timeout=120) as resp:
+            data = json.loads(resp.read().decode())
+    except urllib.error.HTTPError as e:
+        detail = e.read().decode(errors='replace')[:500]
+        return 502, json.dumps({"error": f"Groq error {e.code}: {detail}"}).encode()
+    except Exception as e:
+        return 502, json.dumps({"error": f"Groq unreachable: {e}"}).encode()
+    text = (data.get("choices") or [{}])[0].get("message", {}).get("content", "")
+    if not text:
+        return 502, json.dumps({"error": "Groq returned no text"}).encode()
+    return 200, json.dumps({"response": text}).encode()
+
+
+def forward_xai(payload):
+    prompt = payload.get("prompt", "")
+    system = payload.get("system", "")
+    options = payload.get("options") or {}
+    try:
+        temperature = float(options.get("temperature", 0.1))
+    except (TypeError, ValueError):
+        temperature = 0.1
+    messages = []
+    if system:
+        messages.append({"role": "system", "content": system})
+    messages.append({"role": "user", "content": prompt})
+    req_body = {
+        "model": XAI_MODEL,
+        "messages": messages,
+        "temperature": temperature,
+        "max_tokens": 4096,
+    }
+    if payload.get("response_format") == "json":
+        req_body["response_format"] = {"type": "json_object"}
+    req = urllib.request.Request(
+        XAI_URL,
+        data=json.dumps(req_body).encode(),
+        headers={'Content-Type': 'application/json', 'Authorization': f'Bearer {XAI_API_KEY}'}
+    )
+    try:
+        with urllib.request.urlopen(req, timeout=120) as resp:
+            data = json.loads(resp.read().decode())
+    except urllib.error.HTTPError as e:
+        detail = e.read().decode(errors='replace')[:500]
+        return 502, json.dumps({"error": f"xAI error {e.code}: {detail}"}).encode()
+    except Exception as e:
+        return 502, json.dumps({"error": f"xAI unreachable: {e}"}).encode()
+    text = (data.get("choices") or [{}])[0].get("message", {}).get("content", "")
+    if not text:
+        return 502, json.dumps({"error": "xAI returned no text"}).encode()
+    return 200, json.dumps({"response": text}).encode()
 
 
 def forward_gemini(payload):
@@ -88,7 +172,21 @@ class Handler(http.server.BaseHTTPRequestHandler):
         if self.path.split('?')[0] == '/api/generate':
             length = int(self.headers.get('Content-Length', 0))
             body = self.rfile.read(length)
-            if GEMINI_API_KEY:
+            if GROQ_API_KEY:
+                try:
+                    payload = json.loads(body.decode())
+                except Exception:
+                    status, data = 400, json.dumps({"error": "Groq backend expected a JSON body"}).encode()
+                else:
+                    status, data = forward_groq(payload)
+            elif XAI_API_KEY:
+                try:
+                    payload = json.loads(body.decode())
+                except Exception:
+                    status, data = 400, json.dumps({"error": "xAI backend expected a JSON body"}).encode()
+                else:
+                    status, data = forward_xai(payload)
+            elif GEMINI_API_KEY:
                 try:
                     payload = json.loads(body.decode())
                 except Exception:
@@ -127,7 +225,11 @@ class Handler(http.server.BaseHTTPRequestHandler):
             self.end_headers()
             self.wfile.write(b'OK')
         elif route == '/api/health':
-            if GEMINI_API_KEY:
+            if GROQ_API_KEY:
+                payload = {"backend": "groq", "model": GROQ_MODEL, "ready": True}
+            elif XAI_API_KEY:
+                payload = {"backend": "xai", "model": XAI_MODEL, "ready": True}
+            elif GEMINI_API_KEY:
                 payload = {"backend": "gemini", "model": GEMINI_MODEL, "ready": True}
             else:
                 try:
@@ -147,7 +249,14 @@ class Handler(http.server.BaseHTTPRequestHandler):
             self.end_headers()
 
 if __name__ == '__main__':
-    backend = f"Gemini ({GEMINI_MODEL})" if GEMINI_API_KEY else f"Ollama ({OLLAMA_URL})"
+    if GROQ_API_KEY:
+        backend = f"Groq ({GROQ_MODEL})"
+    elif XAI_API_KEY:
+        backend = f"xAI ({XAI_MODEL})"
+    elif GEMINI_API_KEY:
+        backend = f"Gemini ({GEMINI_MODEL})"
+    else:
+        backend = f"Ollama ({OLLAMA_URL})"
     server = http.server.HTTPServer(('0.0.0.0', PORT), Handler)
     print(f"Running at http://0.0.0.0:{PORT}")
     print(f"Backend: {backend}")
