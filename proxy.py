@@ -10,7 +10,7 @@ BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
 # Backend priority: Groq > xAI > Gemini > Ollama
 GROQ_API_KEY = os.environ.get("GROQ_API_KEY", "").strip()
-GROQ_MODEL = os.environ.get("GROQ_MODEL", "qwen/qwen3.8-27b").strip() or "qwen/qwen3.8-27b"
+GROQ_MODEL = os.environ.get("GROQ_MODEL", "openai/gpt-oss-20b").strip() or "openai/gpt-oss-20b"
 GROQ_URL = "https://api.groq.com/openai/v1/chat/completions"
 
 XAI_API_KEY = os.environ.get("XAI_API_KEY", "").strip()
@@ -54,7 +54,7 @@ def forward_groq(payload):
         "model": GROQ_MODEL,
         "messages": messages,
         "temperature": temperature,
-        "max_tokens": 4096,
+        "max_tokens": 2048,
     }
     if payload.get("response_format") == "json":
         req_body["response_format"] = {"type": "json_object"}
@@ -93,7 +93,7 @@ def forward_xai(payload):
         "model": XAI_MODEL,
         "messages": messages,
         "temperature": temperature,
-        "max_tokens": 4096,
+        "max_tokens": 2048,
     }
     if payload.get("response_format") == "json":
         req_body["response_format"] = {"type": "json_object"}
