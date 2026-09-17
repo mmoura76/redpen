@@ -67,7 +67,7 @@
   .sidebar {
     width: 300px;
     min-width: 300px;
-    background: var(--surface);
+    background: var(--bg);
     border-right: 1px solid var(--border);
     display: flex;
     flex-direction: column;
@@ -93,6 +93,13 @@
     width: 140px;
     height: 40px;
     color: var(--text-primary);
+  }
+
+  .sidebar-header .tagline {
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+    margin-top: 6px;
+    font-style: italic;
   }
 
   .sidebar-title {
@@ -1156,6 +1163,7 @@
         </svg>
       </div>
       <span class="sidebar-title">Prompt history</span>
+      <p class="tagline">Turn "meh" prompts into "make it happen."</p>
     </div>
     <div class="sidebar-body" id="sidebarBody"></div>
     <div class="sidebar-footer">
