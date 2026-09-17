@@ -79,9 +79,20 @@
   }
 
   .sidebar-header {
-    padding: 24px 20px 16px;
+    padding: 20px 20px 16px;
     border-bottom: 1px solid var(--border);
     flex-shrink: 0;
+  }
+
+  .sidebar-header .logo {
+    display: flex;
+    align-items: center;
+  }
+
+  .sidebar-header .logo-svg {
+    width: 140px;
+    height: 40px;
+    color: var(--text-primary);
   }
 
   .sidebar-title {
@@ -1133,17 +1144,6 @@
 <div class="app-layout">
   <aside class="sidebar" id="sidebar" aria-label="Prompt history">
     <div class="sidebar-header">
-      <span class="sidebar-title">Prompt history</span>
-    </div>
-    <div class="sidebar-body" id="sidebarBody"></div>
-    <div class="sidebar-footer">
-      <button class="sidebar-clear" id="sidebarClear">Clear all history</button>
-    </div>
-  </aside>
-
-  <div class="main-area" id="main-content" role="main">
-
-    <header>
       <div class="logo">
         <svg class="logo-svg" width="196" height="56" viewBox="0 0 196 56" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
           <path d="M80.9439 41.8681C77.6799 41.8681 75.2159 40.6521 73.5519 38.2201C71.9199 35.7881 71.1039 32.3321 71.1039 27.8521C71.1039 23.3721 71.9199 19.9161 73.5519 17.4841C75.2159 15.0521 77.6799 13.8361 80.9439 13.8361C82.5759 13.8361 84.0159 14.2361 85.2639 15.0361C86.5439 15.8361 87.5839 16.7481 88.3839 17.7721V11.7241H85.5519V3.85205H99.4239V33.3241H101.536V41.1961H88.3839V37.9321C87.5839 38.9561 86.5439 39.8681 85.2639 40.6681C84.0159 41.4681 82.5759 41.8681 80.9439 41.8681ZM85.5999 33.3241C86.5279 33.3241 87.2159 33.0841 87.6639 32.6041C88.1439 32.0921 88.3839 31.3081 88.3839 30.2521V25.4521C88.3839 24.3961 88.1439 23.6281 87.6639 23.1481C87.2159 22.6361 86.5279 22.3801 85.5999 22.3801C84.6719 22.3801 83.9679 22.6361 83.4879 23.1481C83.0399 23.6281 82.8159 24.3961 82.8159 25.4521V30.2521C82.8159 31.3081 83.0399 32.0921 83.4879 32.6041C83.9679 33.0841 84.6719 33.3241 85.5999 33.3241Z" fill="currentColor"/>
@@ -1155,7 +1155,17 @@
           <rect x="179.059" y="34.3354" width="7.87695" height="7.87695" fill="#c42348"/>
         </svg>
       </div>
-      <p class="tagline">Turn "meh" prompts into "make it happen."</p>
+      <span class="sidebar-title">Prompt history</span>
+    </div>
+    <div class="sidebar-body" id="sidebarBody"></div>
+    <div class="sidebar-footer">
+      <button class="sidebar-clear" id="sidebarClear">Clear all history</button>
+    </div>
+  </aside>
+
+  <div class="main-area" id="main-content" role="main">
+
+    <header>
       <p class="backend-status" id="backendStatus" role="status" aria-live="polite"><span class="status-dot" id="statusDot" aria-hidden="true"></span><span id="statusText">Checking connection…</span></p>
     </header>
 
