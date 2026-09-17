@@ -102,6 +102,12 @@
     font-style: italic;
   }
 
+  .sidebar-section {
+    padding: 12px 20px;
+    border-bottom: 1px solid var(--border);
+    flex-shrink: 0;
+  }
+
   .sidebar-title {
     font-size: 16px;
     font-weight: 700;
@@ -1162,8 +1168,10 @@
           <rect x="179.059" y="34.3354" width="7.87695" height="7.87695" fill="#c42348"/>
         </svg>
       </div>
-      <span class="sidebar-title">Prompt history</span>
       <p class="tagline">Turn "meh" prompts into "make it happen."</p>
+    </div>
+    <div class="sidebar-section">
+      <span class="sidebar-title">Prompt history</span>
     </div>
     <div class="sidebar-body" id="sidebarBody"></div>
     <div class="sidebar-footer">
