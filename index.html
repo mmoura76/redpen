@@ -1336,7 +1336,6 @@
         </div>
       </div>
       <div id="analysisNotes" aria-live="polite"></div>
-      <div id="modelSuggestion" class="model-suggestion" aria-live="polite"></div>
       <p id="scoreHistory" class="field-hint" aria-live="polite"></p>
       <div class="btn-group">
         <button class="btn btn-primary" id="nextBtn">Continue</button>
@@ -1384,6 +1383,7 @@
         <div id="gateRows" class="gate-list" role="list" aria-label="Brief quality checks"></div>
       </div>
       <p id="repairNote" class="field-hint" hidden></p>
+      <div id="modelSuggestion" class="model-suggestion" aria-live="polite"></div>
       <div class="btn-group" style="margin-top:20px;">
         <button class="btn btn-primary" id="newBtn">Start over</button>
       </div>
@@ -1878,6 +1878,31 @@ Return ONLY valid JSON.`;
     el.innerHTML = `<div class="model-badge">${escapeHtml(name)}</div><p class="model-reason">${escapeHtml(reason)}</p>`;
   }
 
+  async function suggestModelForPrompt(promptText) {
+    try {
+      const response = await callOllama(
+        `Analyze this UI/UX design prompt and recommend the best Claude model for it. Return ONLY valid JSON with two fields: "suggested_model" (one of: "claude-haiku", "claude-sonnet", "claude-opus") and "model_reason" (one sentence explaining why).
+
+MODEL SELECTION CRITERIA:
+- "claude-haiku": Simple, single-component UIs with minimal interactions. Fast and cost-effective.
+- "claude-sonnet": Multi-component UIs with moderate detail, interactions, and content structure. Balanced performance.
+- "claude-opus": Complex systems with multiple views, rich interactions, detailed content architecture, and comprehensive state handling. Maximum capability.
+
+Prompt to analyze: "${promptText}"`,
+        'You are a UI/UX expert. Analyze prompt complexity and recommend a Claude model. Return only valid JSON.',
+        true
+      );
+      const result = parseJSONFromResponse(response);
+      if (result && result.suggested_model) {
+        renderModelSuggestion(result.suggested_model, result.model_reason || 'Best fit for this prompt complexity.');
+        return;
+      }
+    } catch (e) {
+      console.error('Model suggestion failed:', e);
+    }
+    renderModelSuggestion('claude-sonnet', 'Balanced performance for this prompt complexity.');
+  }
+
   const CONFLICT_AXES = [
     { label: 'theme', values: ['dark mode', 'light mode'] },
     { label: 'navigation', values: ['sidebar', 'top navigation', 'bottom tab bar', 'bottom bar', 'tab bar', 'modal navigation'] },
@@ -1938,7 +1963,6 @@ Return ONLY valid JSON.`;
     if (lastAnalysisCache.hash === cacheKey && lastAnalysisCache.result) {
       const hit = lastAnalysisCache.result;
       paintAnalysis(hit.dimensions, hit.overall);
-      renderModelSuggestion(hit.suggestedModel || 'claude-sonnet', hit.modelReason || 'Balanced performance for this prompt complexity.');
       analysisResult = hit;
       answers = new Array(hit.questions.length).fill(null);
       scoreHistory.push({ overall: hit.overall, at: Date.now(), cached: true });
@@ -1956,7 +1980,6 @@ Return ONLY valid JSON.`;
     try {
       const { dims, overall, questions, scopeWarning, provenance, suggestedModel, modelReason } = await requestAnalysis(prompt, true, !!refImage);
       paintAnalysis(dims, overall);
-      renderModelSuggestion(suggestedModel, modelReason);
 
       analysisResult = { dimensions: dims, questions, overall, scopeWarning, provenance, suggestedModel, modelReason };
       lastAnalysisCache = { hash: cacheKey, result: analysisResult };
@@ -1971,10 +1994,7 @@ Return ONLY valid JSON.`;
       const dims = calculateFallbackScores(prompt);
       const overall = weightedOverall(dims);
       paintAnalysis(dims, overall);
-      const fallbackModel = overall <= 40 ? 'claude-haiku' : overall <= 75 ? 'claude-sonnet' : 'claude-opus';
-      const fallbackReason = overall <= 40 ? 'Simple prompt, Haiku handles this efficiently.' : overall <= 75 ? 'Moderate complexity, Sonnet provides good balance.' : 'Complex prompt, Opus delivers maximum capability.';
-      renderModelSuggestion(fallbackModel, fallbackReason);
-      analysisResult = { dimensions: dims, questions: getFallbackQuestions(), overall: overall, scopeWarning: null, provenance: { questionsAuto: 4 }, suggestedModel: fallbackModel, modelReason: fallbackReason };
+      analysisResult = { dimensions: dims, questions: getFallbackQuestions(), overall: overall, scopeWarning: null, provenance: { questionsAuto: 4 }, suggestedModel: 'claude-sonnet', modelReason: 'Balanced performance for this prompt complexity.' };
       answers = new Array(analysisResult.questions.length).fill(null);
       scoreHistory.push({ overall, at: Date.now() });
       renderScoreHistory();
@@ -2283,6 +2303,7 @@ Return ONLY the optimized prompt. Do not add any introductory text, comments, or
       $('promptOutput').innerHTML = highlightPrompt(briefText);
       showSection('section-optimized');
       renderGate(gate);
+      suggestModelForPrompt(briefText);
 
       // Save to history
       addHistoryEntry({
@@ -2325,6 +2346,7 @@ Return ONLY the optimized prompt. Do not add any introductory text, comments, or
       $('promptOutput').innerHTML = highlightPrompt(fallback);
       showSection('section-optimized');
       renderGate(validateBrief(fallback));
+      suggestModelForPrompt(fallback);
 
       addHistoryEntry({
         id: Date.now().toString(36) + Math.random().toString(36).slice(2, 6),
@@ -2694,7 +2716,6 @@ Return all screens in scope, all states, plus a short note listing assumptions m
       const n = analysisResult.questions.length;
       answers = analysisResult.questions.map((_, i) => (Array.isArray(s.answers) && typeof s.answers[i] === 'string') ? s.answers[i] : null);
       paintAnalysis(analysisResult.dimensions, analysisResult.overall);
-      renderModelSuggestion(analysisResult.suggestedModel || 'claude-sonnet', analysisResult.modelReason || 'Balanced performance for this prompt complexity.');
       renderAnalysisNotes(detectVagueTerms(s.rawPrompt || ''), analysisResult.scopeWarning || null);
       renderScoreHistory();
       renderQuestions();
