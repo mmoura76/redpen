@@ -1477,7 +1477,7 @@
     const history = loadHistory();
     const body = $('sidebarBody');
     const badge = $('historyBadge');
-    badge.textContent = history.length || '';
+    if (badge) badge.textContent = history.length || '';
 
     if (!history.length) {
       body.innerHTML = '<div class="sidebar-empty">No prompts yet.<br>Optimized prompts will appear here.</div>';
