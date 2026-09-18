@@ -1502,7 +1502,8 @@
       html += `<div class="sidebar-group-label">${escapeHtml(tag)}</div>`;
       grouped[tag].forEach(e => {
         const scoreClass = e.score >= 70 ? 'high' : '';
-        const snippet = e.prompt.length > 80 ? e.prompt.slice(0, 80) + '…' : e.prompt;
+        const displayText = e.brief || e.prompt;
+        const snippet = displayText.length > 80 ? displayText.slice(0, 80) + '…' : displayText;
         const date = new Date(e.date);
         const timeAgo = formatTimeAgo(date);
         html += `
@@ -1549,7 +1550,15 @@
     if (entry.example) $('exampleInput').value = entry.example;
     if (entry.tag && $('tagInput')) $('tagInput').value = entry.tag;
     updateCharCount();
-    showSection('section-input');
+    if (entry.brief && $('promptOutput')) {
+      $('promptOutput').innerHTML = highlightPrompt(entry.brief);
+      $('tokenCount').textContent = `~${estimateTokens(entry.brief)} tokens`;
+      const reduction = Math.round((1 - estimateTokens(entry.brief) / estimateTokens(entry.prompt)) * 100);
+      $('reductionStat').textContent = reduction > 0 ? `-${Math.abs(reduction)}% tokens` : `+${Math.abs(reduction)}% tokens`;
+      showSection('section-optimized');
+    } else {
+      showSection('section-input');
+    }
     showToast('Prompt loaded from history.');
   }
 
