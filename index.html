@@ -445,6 +445,34 @@
     color: var(--text-primary);
   }
 
+  .model-suggestion {
+    margin-top: 16px;
+    padding: 12px 14px;
+    border-radius: var(--radius-md);
+    background: var(--surface-alt);
+    border: 1px solid var(--border);
+  }
+
+  .model-badge {
+    display: inline-block;
+    font-size: 12px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    padding: 4px 10px;
+    border-radius: var(--radius-sm);
+    background: var(--accent);
+    color: white;
+    margin-bottom: 6px;
+  }
+
+  .model-reason {
+    font-size: 13px;
+    color: var(--text-secondary);
+    margin: 0;
+    line-height: 1.5;
+  }
+
   @media (max-width: 640px) {
     .gate-list {
       grid-template-columns: repeat(2, 1fr);
@@ -1308,6 +1336,7 @@
         </div>
       </div>
       <div id="analysisNotes" aria-live="polite"></div>
+      <div id="modelSuggestion" class="model-suggestion" aria-live="polite"></div>
       <p id="scoreHistory" class="field-hint" aria-live="polite"></p>
       <div class="btn-group">
         <button class="btn btn-primary" id="nextBtn">Continue</button>
@@ -1682,7 +1711,7 @@
     }
   }
 
-  const SYSTEM_ANALYSIS = 'You are an expert UI/UX prompt evaluator. Your response MUST be a complete, valid JSON object. Never include any text outside the JSON. Never omit any field. The questions array MUST contain exactly 4 objects. Every explanation must be a specific one-sentence sentence tied to the prompt content.';
+  const SYSTEM_ANALYSIS = 'You are an expert UI/UX prompt evaluator. Your response MUST be a complete, valid JSON object. Never include any text outside the JSON. Never omit any field. The questions array MUST contain exactly 4 objects. Every explanation must be a specific one-sentence sentence tied to the prompt content. You must also recommend the best Claude model for this prompt.';
 
   const ANALYSIS_QUESTIONS_BLOCK = `  "questions": [
     {"text": "Concrete UI decision missing from this prompt?", "options": ["Concrete interface choice 1", "Concrete interface choice 2", "Concrete interface choice 3"], "hasOther": true, "otherPlaceholder": "Describe your answer..."},
@@ -1753,10 +1782,17 @@ ANALYZE THE FOLLOWING PROMPT and return ONLY valid JSON, no markdown, no text ou
     "experience_flow": {"score": <0-100>, "explanation": "One specific sentence explaining the score and what's missing or present", "evidence": "exact short quote from the prompt supporting this score, or null"}
   },
 ${wantQuestions ? ANALYSIS_QUESTIONS_BLOCK : '  "questions": []'},
-  "scope_warning": null
+  "scope_warning": null,
+  "suggested_model": "claude-sonnet",
+  "model_reason": "One sentence explaining why this model fits this prompt"
 }
 
 ${wantQuestions ? ANALYSIS_RULES_BLOCK + '\n\n' : ''}SCOPE CHECK: if the request bundles 2 or more unrelated deliverables (e.g. a dashboard AND a landing page), set "scope_warning" to one sentence naming them and recommending separate briefs; otherwise leave it null.
+
+MODEL SELECTION: Based on the prompt complexity, recommend one of these Claude models:
+- "claude-haiku": Simple, single-component UIs with minimal interactions. Fast and cost-effective.
+- "claude-sonnet": Multi-component UIs with moderate detail, interactions, and content structure. Balanced performance.
+- "claude-opus": Complex systems with multiple views, rich interactions, detailed content architecture, and comprehensive state handling. Maximum capability.
 ${hasImage ? 'A reference image is attached alongside this prompt — factor its visible layout, style, and content into your scores, and reference it in questions where relevant.\n\n' : ''}Prompt to analyze: "${promptText}"
 
 Return ONLY valid JSON.`;
@@ -1792,7 +1828,9 @@ Return ONLY valid JSON.`;
     const overall = result.overall || weightedOverall(dims);
     const scopeWarning = (typeof result.scope_warning === 'string' && result.scope_warning.trim()) ? result.scope_warning.trim() : null;
     const nq = normalizeQuestions(result.questions, dims);
-    return { dims, overall, questions: nq.questions, scopeWarning, provenance: { questionsAuto: nq.autoAdded } };
+    const suggestedModel = result.suggested_model || 'claude-sonnet';
+    const modelReason = result.model_reason || 'Balanced performance for this prompt complexity.';
+    return { dims, overall, questions: nq.questions, scopeWarning, provenance: { questionsAuto: nq.autoAdded }, suggestedModel, modelReason };
   }
 
   const VAGUE_TERMS = ['improve', 'polish', 'better', 'best', 'nice', 'modern', 'clean', 'fix', 'update', 'tweak', 'revamp', 'enhance', 'optimize', 'looks off', 'make it pop'];
@@ -1816,6 +1854,19 @@ Return ONLY valid JSON.`;
       rows.push(`<div class="note-row" role="note"><span>⚠ Scope: ${escapeHtml(scopeWarning)}</span></div>`);
     }
     $('analysisNotes').innerHTML = rows.join('');
+  }
+
+  const MODEL_NAMES = {
+    'claude-haiku': 'Claude Haiku',
+    'claude-sonnet': 'Claude Sonnet',
+    'claude-opus': 'Claude Opus'
+  };
+
+  function renderModelSuggestion(model, reason) {
+    const el = $('modelSuggestion');
+    if (!el) return;
+    const name = MODEL_NAMES[model] || 'Claude Sonnet';
+    el.innerHTML = `<div class="model-badge">${escapeHtml(name)}</div><p class="model-reason">${escapeHtml(reason)}</p>`;
   }
 
   const CONFLICT_AXES = [
@@ -1878,6 +1929,7 @@ Return ONLY valid JSON.`;
     if (lastAnalysisCache.hash === cacheKey && lastAnalysisCache.result) {
       const hit = lastAnalysisCache.result;
       paintAnalysis(hit.dimensions, hit.overall);
+      renderModelSuggestion(hit.suggestedModel || 'claude-sonnet', hit.modelReason || 'Balanced performance for this prompt complexity.');
       analysisResult = hit;
       answers = new Array(hit.questions.length).fill(null);
       scoreHistory.push({ overall: hit.overall, at: Date.now(), cached: true });
@@ -1893,10 +1945,11 @@ Return ONLY valid JSON.`;
     // The analysis prompt template lives in buildAnalysisPrompt().
 
     try {
-      const { dims, overall, questions, scopeWarning, provenance } = await requestAnalysis(prompt, true, !!refImage);
+      const { dims, overall, questions, scopeWarning, provenance, suggestedModel, modelReason } = await requestAnalysis(prompt, true, !!refImage);
       paintAnalysis(dims, overall);
+      renderModelSuggestion(suggestedModel, modelReason);
 
-      analysisResult = { dimensions: dims, questions, overall, scopeWarning, provenance };
+      analysisResult = { dimensions: dims, questions, overall, scopeWarning, provenance, suggestedModel, modelReason };
       lastAnalysisCache = { hash: cacheKey, result: analysisResult };
       answers = new Array(questions.length).fill(null);
       scoreHistory.push({ overall, at: Date.now() });
@@ -1909,7 +1962,10 @@ Return ONLY valid JSON.`;
       const dims = calculateFallbackScores(prompt);
       const overall = weightedOverall(dims);
       paintAnalysis(dims, overall);
-      analysisResult = { dimensions: dims, questions: getFallbackQuestions(), overall: overall, scopeWarning: null, provenance: { questionsAuto: 4 } };
+      const fallbackModel = overall <= 40 ? 'claude-haiku' : overall <= 75 ? 'claude-sonnet' : 'claude-opus';
+      const fallbackReason = overall <= 40 ? 'Simple prompt, Haiku handles this efficiently.' : overall <= 75 ? 'Moderate complexity, Sonnet provides good balance.' : 'Complex prompt, Opus delivers maximum capability.';
+      renderModelSuggestion(fallbackModel, fallbackReason);
+      analysisResult = { dimensions: dims, questions: getFallbackQuestions(), overall: overall, scopeWarning: null, provenance: { questionsAuto: 4 }, suggestedModel: fallbackModel, modelReason: fallbackReason };
       answers = new Array(analysisResult.questions.length).fill(null);
       scoreHistory.push({ overall, at: Date.now() });
       renderScoreHistory();
@@ -2629,6 +2685,7 @@ Return all screens in scope, all states, plus a short note listing assumptions m
       const n = analysisResult.questions.length;
       answers = analysisResult.questions.map((_, i) => (Array.isArray(s.answers) && typeof s.answers[i] === 'string') ? s.answers[i] : null);
       paintAnalysis(analysisResult.dimensions, analysisResult.overall);
+      renderModelSuggestion(analysisResult.suggestedModel || 'claude-sonnet', analysisResult.modelReason || 'Balanced performance for this prompt complexity.');
       renderAnalysisNotes(detectVagueTerms(s.rawPrompt || ''), analysisResult.scopeWarning || null);
       renderScoreHistory();
       renderQuestions();
