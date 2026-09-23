@@ -758,48 +758,43 @@
   }
 
   /* Analysis */
-  .score-ring {
+  .score-badge {
     display: flex;
     align-items: center;
     justify-content: center;
+    gap: 16px;
     margin-bottom: 32px;
+    background: #211a1d;
+    border-radius: 20px;
+    padding: 20px 28px;
   }
 
-  .score-circle {
-    position: relative;
-    width: 140px;
-    height: 140px;
+  .score-light {
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    background: var(--text-tertiary);
+    flex-shrink: 0;
+    transition: background 0.4s ease, box-shadow 0.4s ease;
   }
 
-  .score-circle svg {
-    width: 140px;
-    height: 140px;
-    transform: rotate(-90deg);
+  .score-badge.is-poor .score-light {
+    background: #e5484d;
+    box-shadow: 0 0 12px #e5484d;
   }
 
-  .score-circle bg {
-    fill: var(--surface-alt);
-    stroke: var(--border);
-    stroke-width: 6;
+  .score-badge.is-fair .score-light {
+    background: #f5a524;
+    box-shadow: 0 0 12px #f5a524;
   }
 
-  .score-circle progress {
-    fill: none;
-    stroke: var(--accent);
-    stroke-width: 6;
-    stroke-linecap: round;
-    transition: stroke-dasharray 0.6s ease;
+  .score-badge.is-strong .score-light {
+    background: #30a46c;
+    box-shadow: 0 0 12px #30a46c;
   }
 
   .score-value {
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
     text-align: center;
-    background: var(--surface);
-    padding: 12px 18px;
-    border-radius: 12px;
     min-width: 80px;
   }
 
@@ -808,23 +803,30 @@
     font-weight: 800;
     line-height: 1;
     font-family: var(--font-mono);
-    color: var(--text-primary);
+    color: #ffffff;
   }
 
   .score-label {
     font-size: 12px;
-    color: var(--text-secondary);
+    color: rgba(255, 255, 255, 0.6);
     text-transform: uppercase;
     letter-spacing: 0.5px;
     margin-top: 2px;
     font-weight: 600;
   }
 
-  .score-circle {
-    background: var(--surface-alt);
-    border-radius: 50%;
-    padding: 8px;
+  .score-verdict {
+    font-size: 14px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    min-width: 110px;
+    color: rgba(255, 255, 255, 0.6);
   }
+
+  .score-badge.is-poor .score-verdict { color: #e5484d; }
+  .score-badge.is-fair .score-verdict { color: #f5a524; }
+  .score-badge.is-strong .score-verdict { color: #30a46c; }
 
   .dimensions {
     display: grid;
@@ -873,8 +875,16 @@
     height: 100%;
     border-radius: 2px;
     background: var(--accent);
-    transition: width 0.6s ease;
+    transition: width 0.6s ease, background 0.4s ease;
   }
+
+  .dimension-bar-fill.is-poor { background: #e5484d; }
+  .dimension-bar-fill.is-fair { background: #f5a524; }
+  .dimension-bar-fill.is-strong { background: #30a46c; }
+
+  .dimension-score.is-poor { color: #e5484d; }
+  .dimension-score.is-fair { color: #b7791f; }
+  .dimension-score.is-strong { color: #30a46c; }
 
   .dimension-explanation {
     font-size: 12px;
@@ -1289,17 +1299,13 @@
   <section class="section" id="section-analysis" aria-labelledby="analysis-heading">
     <div class="card">
       <h2 id="analysis-heading" style="font-size:18px; margin-bottom:24px;">Prompt quality analysis</h2>
-      <div class="score-ring" role="img" aria-label="Prompt quality score">
-        <div class="score-circle">
-          <svg viewBox="0 0 140 140">
-            <circle class="bg" cx="70" cy="70" r="60"></circle>
-            <circle id="scoreArc" cx="70" cy="70" r="60" stroke-dasharray="0 377"></circle>
-          </svg>
-          <div class="score-value">
-            <div class="score-number" id="scoreNumber" aria-live="polite">0</div>
-            <div class="score-label">of 100</div>
-          </div>
+      <div class="score-badge" id="scoreBadge" role="img" aria-label="Prompt quality score">
+        <span class="score-light" aria-hidden="true"></span>
+        <div class="score-value">
+          <div class="score-number" id="scoreNumber" aria-live="polite">0</div>
+          <div class="score-label">of 100</div>
         </div>
+        <div class="score-verdict" id="scoreVerdict">Analyzing…</div>
       </div>
       <div class="dimensions" role="list" aria-label="Quality dimensions">
         <div class="dimension" role="listitem">
@@ -1592,6 +1598,12 @@
     return true;
   }
 
+  function scoreLevel(score) {
+    if (score >= 70) return { cls: 'is-strong', verdict: 'Strong' };
+    if (score >= 40) return { cls: 'is-fair', verdict: 'Fair' };
+    return { cls: 'is-poor', verdict: 'Needs work' };
+  }
+
   function paintAnalysis(dims, overall) {
     animateScore(dims.visual_clarity.score, 'goal', dims.visual_clarity.explanation, dims.visual_clarity.evidence);
     animateScore(dims.interaction_definition.score, 'context', dims.interaction_definition.explanation, dims.interaction_definition.evidence);
@@ -1599,10 +1611,12 @@
     animateScore(dims.experience_flow.score, 'acceptance', dims.experience_flow.explanation, dims.experience_flow.evidence);
 
     setTimeout(() => {
+      const { cls, verdict } = scoreLevel(overall);
       $('scoreNumber').textContent = overall;
-      const circumference = 2 * Math.PI * 60;
-      const offset = circumference - (overall / 100) * circumference;
-      $('scoreArc').setAttribute('stroke-dasharray', `${circumference - offset} ${circumference}`);
+      const badge = $('scoreBadge');
+      badge.classList.remove('is-poor', 'is-fair', 'is-strong');
+      badge.classList.add(cls);
+      $('scoreVerdict').textContent = verdict;
     }, 400);
   }
 
@@ -1688,6 +1702,10 @@
       if (explEl) explEl.textContent = 'Analyzing...';
     });
     $('scoreNumber').textContent = '?';
+    const badge = $('scoreBadge');
+    if (badge) badge.classList.remove('is-poor', 'is-fair', 'is-strong');
+    const verdict = $('scoreVerdict');
+    if (verdict) verdict.textContent = 'Analyzing…';
   }
 
   function connectionErrorMessage(err, usingWhat) {
@@ -2047,8 +2065,18 @@ Prompt to analyze: "${promptText}"`,
     const el = $(`${dimension}Score`);
     const bar = $(`${dimension}Bar`);
     const explEl = $(`${dimension}Explanation`);
-    if (bar) { bar.style.transition = 'none'; bar.style.width = '0%'; }
-    if (el) el.textContent = '0';
+    const { cls } = scoreLevel(score);
+    if (bar) {
+      bar.style.transition = 'none';
+      bar.style.width = '0%';
+      bar.classList.remove('is-poor', 'is-fair', 'is-strong');
+      bar.classList.add(cls);
+    }
+    if (el) {
+      el.textContent = '0';
+      el.classList.remove('is-poor', 'is-fair', 'is-strong');
+      el.classList.add(cls);
+    }
     if (explEl) explEl.textContent = 'Analyzing...';
 
     requestAnimationFrame(() => {
@@ -2604,7 +2632,10 @@ Return all screens in scope, all states, plus a short note listing assumptions m
     clearRefImage();
     updateCharCount();
     $('scoreNumber').textContent = '0';
-    $('scoreArc').setAttribute('stroke-dasharray', '0 377');
+    const badge = $('scoreBadge');
+    if (badge) badge.classList.remove('is-poor', 'is-fair', 'is-strong');
+    const verdict = $('scoreVerdict');
+    if (verdict) verdict.textContent = 'Analyzing…';
     ['goal', 'context', 'constraints', 'acceptance'].forEach(d => {
       $(`${d}Score`).textContent = '0';
       $(`${d}Bar`).style.width = '0%';
