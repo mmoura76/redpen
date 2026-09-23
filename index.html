@@ -1044,6 +1044,7 @@
   }
 
   .prompt-output .kw { color: #c42348; }
+  .prompt-output .tg { color: #7f1d2f; font-weight: 700; }
   .prompt-output .str { color: #9a6700; }
   .prompt-output .fn { color: #6a4c93; }
   .prompt-output .cm { color: #6a9955; }
@@ -2383,7 +2384,7 @@ Return ONLY the optimized prompt. Do not add any introductory text, comments, or
     out = out
       .replace(/("[^"\n]*"|'[^'\n]*'|`[^`\n]*`)/g, '<span class="str">$1</span>')
       .replace(/^(#{1,6}\s.*)$/gm, '<span class="cm">$1</span>')
-      .replace(/(&lt;\/?[\w-]+&gt;)/g, '<span class="kw">$1</span>')
+      .replace(/(&lt;\/?[\w-]+&gt;)/g, '<span class="tg">$1</span>')
       .replace(/(?<!["\w])(layout|style|color|design|interface|interaction|content|navigation|flow|state|visual|experience|structure|transition|pattern|hierarchy|component)(\s)/gi, '<span class="kw">$1$2</span>')
       .replace(/\b([\w-]+)\s*\(/g, '<span class="fn">$1</span>(');
     return out;
