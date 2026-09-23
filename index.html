@@ -1389,6 +1389,7 @@
       <div id="modelSuggestion" class="model-suggestion" aria-live="polite"></div>
       <div class="btn-group" style="margin-top:20px;">
         <button class="btn btn-primary" id="newBtn">Start over</button>
+        <button class="btn btn-secondary" id="shareBtn">Copy share link</button>
       </div>
     </div>
   </section>
@@ -1414,6 +1415,7 @@
   let lastAnalysisCache = { hash: null, result: null };
   let isAnalyzing = false;
   let isCompiling = false;
+  let currentHistoryId = null;
 
   const OLLAMA_URL = '/api/generate';
 
@@ -1549,6 +1551,7 @@
   function loadFromHistory(id) {
     const entry = loadHistory().find(e => e.id === id);
     if (!entry) return;
+    currentHistoryId = entry.id;
     $('rawPrompt').value = entry.prompt;
     if (entry.example) $('exampleInput').value = entry.example;
     if (entry.tag && $('tagInput')) $('tagInput').value = entry.tag;
@@ -1558,11 +1561,26 @@
       $('tokenCount').textContent = `~${estimateTokens(entry.brief)} tokens`;
       const reduction = Math.round((1 - estimateTokens(entry.brief) / estimateTokens(entry.prompt)) * 100);
       $('reductionStat').textContent = reduction > 0 ? `-${Math.abs(reduction)}% tokens` : `+${Math.abs(reduction)}% tokens`;
+      renderGate(validateBrief(entry.brief));
+      if (entry.suggestedModel) renderModelSuggestion(entry.suggestedModel, entry.modelReason || '');
       showSection('section-optimized');
     } else {
       showSection('section-input');
     }
     showToast('Prompt loaded from history.');
+  }
+
+  function loadSharedResult() {
+    const id = new URLSearchParams(window.location.search).get('result');
+    if (!id) return false;
+    const entry = loadHistory().find(e => e.id === id);
+    if (!entry || !entry.brief) {
+      showToast('Shared prompt not found on this device.');
+      return false;
+    }
+    loadFromHistory(id);
+    showToast('Shared prompt loaded.');
+    return true;
   }
 
   function paintAnalysis(dims, overall) {
@@ -1897,13 +1915,16 @@ Prompt to analyze: "${promptText}"`,
       );
       const result = parseJSONFromResponse(response);
       if (result && result.suggested_model) {
-        renderModelSuggestion(result.suggested_model, result.model_reason || 'Best fit for this prompt complexity.');
-        return;
+        const info = { model: result.suggested_model, reason: result.model_reason || 'Best fit for this prompt complexity.' };
+        renderModelSuggestion(info.model, info.reason);
+        return info;
       }
     } catch (e) {
       console.error('Model suggestion failed:', e);
     }
-    renderModelSuggestion('claude-sonnet', 'Balanced performance for this prompt complexity.');
+    const fallback = { model: 'claude-sonnet', reason: 'Balanced performance for this prompt complexity.' };
+    renderModelSuggestion(fallback.model, fallback.reason);
+    return fallback;
   }
 
   const CONFLICT_AXES = [
@@ -2306,16 +2327,19 @@ Return ONLY the optimized prompt. Do not add any introductory text, comments, or
       $('promptOutput').innerHTML = highlightPrompt(briefText);
       showSection('section-optimized');
       renderGate(gate);
-      suggestModelForPrompt(briefText);
+      const modelInfo = await suggestModelForPrompt(briefText);
 
       // Save to history
+      currentHistoryId = Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
       addHistoryEntry({
-        id: Date.now().toString(36) + Math.random().toString(36).slice(2, 6),
+        id: currentHistoryId,
         tag: $('tagInput') ? $('tagInput').value.trim() : '',
         prompt: prompt,
         example: userExample,
         brief: briefText,
         score: analysisResult.overall,
+        suggestedModel: modelInfo.model,
+        modelReason: modelInfo.reason,
         date: new Date().toISOString(),
         answers: answers.slice()
       });
@@ -2349,15 +2373,18 @@ Return ONLY the optimized prompt. Do not add any introductory text, comments, or
       $('promptOutput').innerHTML = highlightPrompt(fallback);
       showSection('section-optimized');
       renderGate(validateBrief(fallback));
-      suggestModelForPrompt(fallback);
+      const fallbackModelInfo = await suggestModelForPrompt(fallback);
 
+      currentHistoryId = Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
       addHistoryEntry({
-        id: Date.now().toString(36) + Math.random().toString(36).slice(2, 6),
+        id: currentHistoryId,
         tag: $('tagInput') ? $('tagInput').value.trim() : '',
         prompt: prompt,
         example: userExample,
         brief: fallback,
         score: analysisResult ? analysisResult.overall : 0,
+        suggestedModel: fallbackModelInfo.model,
+        modelReason: fallbackModelInfo.reason,
         date: new Date().toISOString(),
         answers: answers.slice()
       });
@@ -2579,6 +2606,7 @@ Return all screens in scope, all states, plus a short note listing assumptions m
     });
     answers = [];
     analysisResult = null;
+    currentHistoryId = null;
     scoreHistory = [];
     lastAnalysisCache = { hash: null, result: null };
     $('deltaPanel').hidden = true;
@@ -2708,6 +2736,25 @@ Return all screens in scope, all states, plus a short note listing assumptions m
   $('compileBtn').addEventListener('click', generateOptimizedPrompt);
   $('copyBtn').addEventListener('click', copyPrompt);
   $('newBtn').addEventListener('click', resetApp);
+  $('shareBtn').addEventListener('click', async () => {
+    if (!currentHistoryId) {
+      showToast('Compile a prompt first to share it.');
+      return;
+    }
+    const url = `${window.location.origin}${window.location.pathname}?result=${currentHistoryId}`;
+    try {
+      await navigator.clipboard.writeText(url);
+      showToast('Share link copied to clipboard.');
+    } catch (e) {
+      const ta = document.createElement('textarea');
+      ta.value = url;
+      document.body.appendChild(ta);
+      ta.select();
+      try { document.execCommand('copy'); showToast('Share link copied to clipboard.'); }
+      catch (err) { showToast('Could not copy link.'); }
+      ta.remove();
+    }
+  });
 
   function restore() {
     let s = null;
@@ -2787,6 +2834,7 @@ Return all screens in scope, all states, plus a short note listing assumptions m
       showToast('You opened index.html directly. Run "python3 proxy.py" and open http://localhost:8080 or Analyze will fail.');
     }
     restore();
+    loadSharedResult();
   });
 </script>
 </body>
