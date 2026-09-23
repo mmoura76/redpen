@@ -1417,7 +1417,7 @@
   let isCompiling = false;
   let currentHistoryId = null;
 
-  const OLLAMA_URL = '/api/generate';
+  const API_URL = '/api/generate';
 
   function promptHash(t) {
     let h = 5381;
@@ -1689,9 +1689,9 @@
     return `Could not reach the AI backend (${detail}). Open the app via http://localhost:8080 with proxy.py running. Using ${usingWhat}.`;
   }
 
-  async function callOllama(prompt, system, wantJson) {
+  async function callAI(prompt, system, wantJson) {
     try {
-      const response = await fetch(OLLAMA_URL, {
+      const response = await fetch(API_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -1717,7 +1717,7 @@
       const data = await response.json();
       return data.response || '';
     } catch (err) {
-      console.error('Ollama API error:', err);
+        console.error('AI API error:', err);
       throw err;
     }
   }
@@ -1835,7 +1835,7 @@ Return ONLY valid JSON.`;
   }
 
   async function requestAnalysis(promptText, wantQuestions = true, hasImage = false) {
-    const response = await callOllama(buildAnalysisPrompt(promptText, wantQuestions, hasImage), SYSTEM_ANALYSIS, true);
+    const response = await callAI(buildAnalysisPrompt(promptText, wantQuestions, hasImage), SYSTEM_ANALYSIS, true);
     const result = parseJSONFromResponse(response);
 
     if (result && !result.dimensions) {
@@ -1901,7 +1901,7 @@ Return ONLY valid JSON.`;
 
   async function suggestModelForPrompt(promptText) {
     try {
-      const response = await callOllama(
+      const response = await callAI(
         `Analyze this UI/UX design prompt and recommend the best Claude model for it. Return ONLY valid JSON with two fields: "suggested_model" (one of: "claude-haiku", "claude-sonnet", "claude-opus") and "model_reason" (one sentence explaining why).
 
 MODEL SELECTION CRITERIA:
@@ -1965,7 +1965,7 @@ Prompt to analyze: "${promptText}"`,
     box.innerHTML = conflicts.map(c => `<div class="note-row" role="note"><span>⚠ ${escapeHtml(c)}</span></div>`).join('');
   }
 
-  // ---- STEP 1: Analyze via Ollama ----
+  // ---- STEP 1: Analyze via Groq ----
   async function runAnalysis() {
     const prompt = $('rawPrompt').value.trim();
     if (!prompt) {
@@ -2233,7 +2233,7 @@ Prompt to analyze: "${promptText}"`,
     renderConflictsFromState();
   }
 
-  // ---- STEP 3: Compile optimized prompt via Ollama ----
+  // ---- STEP 3: Compile optimized prompt via Groq ----
   async function generateOptimizedPrompt() {
     if (!analysisResult || !analysisResult.questions) {
       showToast('No analysis data available. Please analyze first.');
@@ -2296,7 +2296,7 @@ ${imageReq}
 Return ONLY the optimized prompt. Do not add any introductory text, comments, or explanation.`;
 
     try {
-      const response = await callOllama(optimizePrompt, 'You are a UI/UX prompt engineer specializing in design prototypes for Claude Code. Generate clean, structured prompts with XML tags that describe visual and experiential aspects only. Return only the prompt content, no preamble. Never mention technology, code, frameworks, APIs, or databases.', false);
+      const response = await callAI(optimizePrompt, 'You are a UI/UX prompt engineer specializing in design prototypes for Claude Code. Generate clean, structured prompts with XML tags that describe visual and experiential aspects only. Return only the prompt content, no preamble. Never mention technology, code, frameworks, APIs, or databases.', false);
 
       let briefText = response;
       let repairFixed = 0;
@@ -2304,7 +2304,7 @@ Return ONLY the optimized prompt. Do not add any introductory text, comments, or
       if (gate.passedCount > 0 && !gate.passed && briefText.trim()) {
         try {
           const failed = gate.checks.filter(c => !c.pass).map(c => `- ${c.label} (${c.detail})`).join('\n');
-          const repaired = await callOllama(
+          const repaired = await callAI(
             `Fix ONLY the failed items below in this Claude Code design brief. Keep the same XML sections and everything that already passes.\n\nFailed items:\n${failed}\n\nBrief:\n${briefText}\n\nReturn ONLY the corrected brief, no preamble.`,
             'You are a UI/UX prompt engineer. Fix only the listed issues. Return only the corrected brief, no preamble.',
             false
@@ -2714,7 +2714,7 @@ Return all screens in scope, all states, plus a short note listing assumptions m
   });
   $('nextBtn').addEventListener('click', () => {
     if (!analysisResult || !analysisResult.dimensions) {
-      showToast('Analysis not complete. Please wait or check Ollama connection.');
+      showToast('Analysis not complete. Please wait or check Groq connection.');
       return;
     }
     const dims = analysisResult.dimensions;
@@ -2816,9 +2816,9 @@ Return all screens in scope, all states, plus a short note listing assumptions m
       if (!res.ok) throw new Error('health ' + res.status);
       const h = await res.json();
       if (h.ready) {
-        set('online', h.backend === 'groq' ? `Groq ready (${h.model})` : h.backend === 'xai' ? `xAI ready (${h.model})` : h.backend === 'gemini' ? `Gemini ready (${h.model})` : 'Ollama ready');
+        set('online', `Groq ready (${h.model})`);
       } else {
-        set('offline', 'Backend unreachable — fallback mode');
+        set('offline', 'Groq unreachable — check GROQ_API_KEY');
       }
     } catch (e) {
       set('offline', 'Proxy unreachable — start proxy.py');
