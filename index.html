@@ -1029,7 +1029,7 @@
 
   .prompt-output {
     background: #1e1e1e;
-    color: #d4d4d4;
+    color: #ffffff;
     padding: 20px 24px;
     border-radius: var(--radius-md);
     font-family: var(--font-mono);
@@ -1044,7 +1044,9 @@
   }
 
   .prompt-output .kw { color: #c42348; }
-  .prompt-output .tg { color: #7f1d2f; font-weight: 700; }
+  .prompt-output .tg-green { color: #9FF885; font-weight: 700; }
+  .prompt-output .tg-blue { color: #86DFF7; font-weight: 700; }
+  .prompt-output .tg-orange { color: #F7B786; font-weight: 700; }
   .prompt-output .str { color: #9a6700; }
   .prompt-output .fn { color: #6a4c93; }
   .prompt-output .cm { color: #6a9955; }
@@ -2377,6 +2379,12 @@ Return ONLY the optimized prompt. Do not add any introductory text, comments, or
     return String(t).replace(/^\s*<prompt>\s*([\s\S]*?)\s*<\/prompt>\s*$/, '$1').trim();
   }
 
+  const TAG_COLOR_CLASS = {
+    role: 'tg-green', output_format: 'tg-green', example: 'tg-green',
+    goal: 'tg-blue', context: 'tg-blue', scope: 'tg-blue',
+    constraints: 'tg-orange', acceptance_criteria: 'tg-orange'
+  };
+
   function highlightPrompt(text) {
     // Order matters: the quote regex must run BEFORE any <span> tags exist,
     // otherwise it matches the quotes inside class="..." and corrupts the HTML.
@@ -2384,7 +2392,10 @@ Return ONLY the optimized prompt. Do not add any introductory text, comments, or
     out = out
       .replace(/("[^"\n]*"|'[^'\n]*'|`[^`\n]*`)/g, '<span class="str">$1</span>')
       .replace(/^(#{1,6}\s.*)$/gm, '<span class="cm">$1</span>')
-      .replace(/(&lt;\/?[\w-]+&gt;)/g, '<span class="tg">$1</span>')
+      .replace(/&lt;(\/?)([\w-]+)&gt;/g, (m, slash, name) => {
+        const cls = TAG_COLOR_CLASS[name.toLowerCase()] || 'tg-green';
+        return `<span class="${cls}">&lt;${slash}${name}&gt;</span>`;
+      })
       .replace(/(?<!["\w])(layout|style|color|design|interface|interaction|content|navigation|flow|state|visual|experience|structure|transition|pattern|hierarchy|component)(\s)/gi, '<span class="kw">$1$2</span>')
       .replace(/\b([\w-]+)\s*\(/g, '<span class="fn">$1</span>(');
     return out;
