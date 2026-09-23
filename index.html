@@ -299,6 +299,15 @@
     color: var(--text-secondary);
   }
 
+  .main-area footer {
+    text-align: center;
+    padding: 8px 0 32px;
+  }
+
+  .main-area footer .backend-status {
+    margin-top: 0;
+  }
+
   .status-dot {
     width: 8px;
     height: 8px;
@@ -1212,10 +1221,6 @@
 
   <div class="main-area" id="main-content" role="main">
 
-    <header>
-      <p class="backend-status" id="backendStatus" role="status" aria-live="polite"><span class="status-dot" id="statusDot" aria-hidden="true"></span><span id="statusText">Checking connection…</span></p>
-    </header>
-
     <nav aria-label="Progress">
       <ol class="steps" id="stepIndicator" role="list">
         <li class="step active" data-step="1">
@@ -1393,6 +1398,10 @@
       </div>
     </div>
   </section>
+
+    <footer>
+      <p class="backend-status" id="backendStatus" role="status" aria-live="polite"><span class="status-dot" id="statusDot" aria-hidden="true"></span><span id="statusText">Checking connection…</span></p>
+    </footer>
 
   </div><!-- /main-area -->
 </div><!-- /app-layout -->
