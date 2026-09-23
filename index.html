@@ -475,6 +475,15 @@
     margin-bottom: 6px;
   }
 
+  .model-heading {
+    font-size: 12px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--text-secondary);
+    margin-bottom: 8px;
+  }
+
   .model-reason {
     font-size: 13px;
     color: var(--text-secondary);
@@ -1923,7 +1932,7 @@ Return ONLY valid JSON.`;
     const el = $('modelSuggestion');
     if (!el) return;
     const name = MODEL_NAMES[model] || 'Claude Sonnet';
-    el.innerHTML = `<div class="model-badge">${escapeHtml(name)}</div><p class="model-reason">${escapeHtml(reason)}</p>`;
+    el.innerHTML = `<div class="model-heading">Suggested AI model for this prompt</div><div class="model-badge">${escapeHtml(name)}</div><p class="model-reason">${escapeHtml(reason)}</p>`;
   }
 
   async function suggestModelForPrompt(promptText) {
