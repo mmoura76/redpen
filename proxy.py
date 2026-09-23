@@ -7,10 +7,14 @@ import urllib.error
 PORT = int(os.environ.get("PORT", 8080))
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
-# Single backend: Groq
+# Primary backend: Groq. Automatic fallback: OpenRouter (:free models).
 GROQ_API_KEY = os.environ.get("GROQ_API_KEY", "").strip()
 GROQ_MODEL = os.environ.get("GROQ_MODEL", "openai/gpt-oss-20b").strip() or "openai/gpt-oss-20b"
 GROQ_URL = "https://api.groq.com/openai/v1/chat/completions"
+
+OPENROUTER_API_KEY = os.environ.get("OPENROUTER_API_KEY", "").strip()
+OPENROUTER_MODEL = os.environ.get("OPENROUTER_MODEL", "openrouter/free").strip() or "openrouter/free"
+OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions"
 
 
 def forward_groq(payload):
@@ -49,7 +53,52 @@ def forward_groq(payload):
     text = (data.get("choices") or [{}])[0].get("message", {}).get("content", "")
     if not text:
         return 502, json.dumps({"error": "Groq returned no text"}).encode()
-    return 200, json.dumps({"response": text}).encode()
+    return 200, json.dumps({"response": text, "backend": "groq"}).encode()
+
+
+def forward_openrouter(payload):
+    prompt = payload.get("prompt", "")
+    system = payload.get("system", "")
+    options = payload.get("options") or {}
+    try:
+        temperature = float(options.get("temperature", 0.1))
+    except (TypeError, ValueError):
+        temperature = 0.1
+    messages = []
+    if system:
+        messages.append({"role": "system", "content": system})
+    messages.append({"role": "user", "content": prompt})
+    req_body = {
+        "model": OPENROUTER_MODEL,
+        "messages": messages,
+        "temperature": temperature,
+        "max_tokens": 2048,
+    }
+    if payload.get("response_format") == "json":
+        req_body["response_format"] = {"type": "json_object"}
+    req = urllib.request.Request(
+        OPENROUTER_URL,
+        data=json.dumps(req_body).encode(),
+        headers={
+            'Content-Type': 'application/json',
+            'Authorization': f'Bearer {OPENROUTER_API_KEY}',
+            'HTTP-Referer': 'http://localhost:8080',
+            'X-Title': 'RedPen',
+            'User-Agent': 'RedPen/1.0',
+        }
+    )
+    try:
+        with urllib.request.urlopen(req, timeout=120) as resp:
+            data = json.loads(resp.read().decode())
+    except urllib.error.HTTPError as e:
+        detail = e.read().decode(errors='replace')[:500]
+        return 502, json.dumps({"error": f"OpenRouter error {e.code}: {detail}"}).encode()
+    except Exception as e:
+        return 502, json.dumps({"error": f"OpenRouter unreachable: {e}"}).encode()
+    text = (data.get("choices") or [{}])[0].get("message", {}).get("content", "")
+    if not text:
+        return 502, json.dumps({"error": "OpenRouter returned no text"}).encode()
+    return 200, json.dumps({"response": text, "backend": "openrouter"}).encode()
 
 
 class Handler(http.server.BaseHTTPRequestHandler):
@@ -76,6 +125,9 @@ class Handler(http.server.BaseHTTPRequestHandler):
                     status, data = 400, json.dumps({"error": "Groq backend expected a JSON body"}).encode()
                 else:
                     status, data = forward_groq(payload)
+                    if status != 200 and OPENROUTER_API_KEY:
+                        print(f"Groq failed (status {status}) — falling back to OpenRouter ({OPENROUTER_MODEL})")
+                        status, data = forward_openrouter(payload)
             self.send_response(status)
             self.send_header('Access-Control-Allow-Origin', '*')
             self.send_header('Content-Type', 'application/json')
@@ -106,7 +158,16 @@ class Handler(http.server.BaseHTTPRequestHandler):
             self.end_headers()
             self.wfile.write(b'OK')
         elif route == '/api/health':
-            payload = {"backend": "groq", "model": GROQ_MODEL, "ready": bool(GROQ_API_KEY)}
+            payload = {
+                "backend": "groq",
+                "model": GROQ_MODEL,
+                "ready": bool(GROQ_API_KEY),
+                "fallback": {
+                    "backend": "openrouter",
+                    "model": OPENROUTER_MODEL,
+                    "ready": bool(OPENROUTER_API_KEY),
+                },
+            }
             data = json.dumps(payload).encode()
             self.send_response(200)
             self.send_header('Access-Control-Allow-Origin', '*')
@@ -124,4 +185,8 @@ if __name__ == '__main__':
         print(f"Backend: Groq ({GROQ_MODEL})")
     else:
         print("WARNING: GROQ_API_KEY is not set — /api/generate will return an error.")
+    if OPENROUTER_API_KEY:
+        print(f"Fallback: OpenRouter ({OPENROUTER_MODEL})")
+    else:
+        print("No OPENROUTER_API_KEY — running without fallback.")
     server.serve_forever()

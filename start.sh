@@ -13,5 +13,10 @@ if [ -n "$CERT_FILE" ]; then
   export SSL_CERT_FILE="$CERT_FILE"
 fi
 echo "Using Groq backend (${GROQ_MODEL:-openai/gpt-oss-20b})"
+if [ -z "$OPENROUTER_API_KEY" ]; then
+  echo "No OPENROUTER_API_KEY — running without fallback. (Optional: export OPENROUTER_API_KEY for automatic failover.)"
+else
+  echo "Fallback: OpenRouter (${OPENROUTER_MODEL:-openrouter/free})"
+fi
 echo "Starting proxy on http://localhost:8080 ..."
 python3 proxy.py
