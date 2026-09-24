@@ -1572,6 +1572,12 @@
     // No-op for persistent sidebar
   }
 
+  function reductionText(newTokens, baseTokens) {
+    if (!baseTokens || baseTokens <= 0) return '';
+    const reduction = Math.round((1 - newTokens / baseTokens) * 100);
+    return reduction > 0 ? `-${Math.abs(reduction)}% tokens` : `+${Math.abs(reduction)}% tokens`;
+  }
+
   function loadFromHistory(id) {
     const entry = loadHistory().find(e => e.id === id);
     if (!entry) return;
@@ -1583,8 +1589,7 @@
     if (entry.brief && $('promptOutput')) {
       $('promptOutput').innerHTML = highlightPrompt(entry.brief);
       $('tokenCount').textContent = `~${estimateTokens(entry.brief)} tokens`;
-      const reduction = Math.round((1 - estimateTokens(entry.brief) / estimateTokens(entry.prompt)) * 100);
-      $('reductionStat').textContent = reduction > 0 ? `-${Math.abs(reduction)}% tokens` : `+${Math.abs(reduction)}% tokens`;
+      $('reductionStat').textContent = reductionText(estimateTokens(entry.brief), estimateTokens(entry.prompt || ''));
       renderGate(validateBrief(entry.brief));
       if (entry.suggestedModel) renderModelSuggestion(entry.suggestedModel, entry.modelReason || '');
       showSection('section-optimized');
@@ -2367,8 +2372,7 @@ Return ONLY the optimized prompt. Do not add any introductory text, comments, or
       }
 
       $('tokenCount').textContent = `~${estimateTokens(briefText)} tokens`;
-      const reduction = Math.round((1 - estimateTokens(briefText) / originalTokenCount) * 100);
-      $('reductionStat').textContent = reduction > 0 ? `-${Math.abs(reduction)}% tokens` : `+${Math.abs(reduction)}% tokens`;
+      $('reductionStat').textContent = reductionText(estimateTokens(briefText), originalTokenCount);
 
       $('promptOutput').innerHTML = highlightPrompt(briefText);
       showSection('section-optimized');
@@ -2414,8 +2418,7 @@ Return ONLY the optimized prompt. Do not add any introductory text, comments, or
       showToast(connectionErrorMessage(err, 'Using fallback prompt'));
       const fallback = generateFallbackPrompt(prompt, userExample);
       $('tokenCount').textContent = `~${estimateTokens(fallback)} tokens`;
-      const reduction = Math.round((1 - estimateTokens(fallback) / originalTokenCount) * 100);
-      $('reductionStat').textContent = reduction > 0 ? `-${Math.abs(reduction)}% tokens` : `+${Math.abs(reduction)}% tokens`;
+      $('reductionStat').textContent = reductionText(estimateTokens(fallback), originalTokenCount);
       $('promptOutput').innerHTML = highlightPrompt(fallback);
       showSection('section-optimized');
       renderGate(validateBrief(fallback));
@@ -2818,6 +2821,7 @@ Return all screens in scope, all states, plus a short note listing assumptions m
     if (typeof s.exampleInput === 'string') $('exampleInput').value = s.exampleInput;
     if (typeof s.tagInput === 'string' && $('tagInput')) $('tagInput').value = s.tagInput;
     if (Array.isArray(s.scoreHistory)) scoreHistory = s.scoreHistory;
+    if (typeof s.originalTokenCount === 'number' && s.originalTokenCount > 0) originalTokenCount = s.originalTokenCount;
     if (s.analysisCache) lastAnalysisCache = s.analysisCache;
     if (s.analysis && s.analysis.dimensions) {
       analysisResult = s.analysis;
@@ -2832,9 +2836,7 @@ Return all screens in scope, all states, plus a short note listing assumptions m
       if (s.brief && s.step === 'section-optimized') {
         $('promptOutput').innerHTML = highlightPrompt(s.brief);
         $('tokenCount').textContent = `~${estimateTokens(s.brief)} tokens`;
-        const baseTokens = estimateTokens(s.rawPrompt || s.brief);
-        const red = Math.round((1 - estimateTokens(s.brief) / baseTokens) * 100);
-        $('reductionStat').textContent = red > 0 ? `-${Math.abs(red)}% tokens` : `+${Math.abs(red)}% tokens`;
+        $('reductionStat').textContent = reductionText(estimateTokens(s.brief), estimateTokens(s.rawPrompt || s.brief));
         renderGate(validateBrief(s.brief));
         if (s.repairNote) {
           $('repairNote').textContent = s.repairNote;
