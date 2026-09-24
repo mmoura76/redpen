@@ -707,6 +707,33 @@
     font-family: var(--font-mono);
   }
 
+  .tips {
+    margin: 12px 0 4px;
+    font-size: 13px;
+    color: var(--text-secondary);
+  }
+
+  .tips summary {
+    cursor: pointer;
+    font-weight: 600;
+    color: var(--accent);
+    width: fit-content;
+  }
+
+  .tips summary:hover {
+    text-decoration: underline;
+  }
+
+  .tips ol {
+    margin: 8px 0 0;
+    padding-left: 20px;
+    line-height: 1.7;
+  }
+
+  .tips li b {
+    color: var(--text-primary);
+  }
+
   .btn {
     display: inline-flex;
     align-items: center;
@@ -1278,6 +1305,16 @@
         <span id="charCount">0 characters</span>
         <span id="tokenEstimate">~0 tokens</span>
       </div>
+      <details class="tips">
+        <summary>Tips for a better prompt</summary>
+        <ol>
+          <li><b>Name the screens</b> — dashboard, task list, settings…</li>
+          <li><b>Describe the look</b> — layout, colors, style, spacing…</li>
+          <li><b>Say what users do</b> — tap, swipe, drag, and what feedback they get…</li>
+          <li><b>Cover the states</b> — empty, loading, error, success…</li>
+          <li><b>Ban vague words</b> — “modern”, “clean” and “nice” mean nothing, describe instead…</li>
+        </ol>
+      </details>
       <div class="example-field">
         <label class="field-label" for="exampleInput">Reference example <span class="optional">(optional)</span></label>
         <textarea id="exampleInput" class="small" placeholder="Paste a description of a screen or brief you like, e.g. 'Sidebar 240px, icons plus labels, active item is a filled pill…'"></textarea>
