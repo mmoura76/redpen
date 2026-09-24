@@ -734,6 +734,21 @@
     color: var(--text-primary);
   }
 
+  .follow-up-note {
+    font-size: 13px;
+    line-height: 1.5;
+    padding: 10px 14px;
+    border-radius: var(--radius-md);
+    background: var(--surface-alt);
+    border: 1px solid var(--border);
+    color: var(--text-primary);
+    margin-bottom: 12px;
+  }
+
+  .sidebar-item.child {
+    margin-left: 22px;
+  }
+
   .btn {
     display: inline-flex;
     align-items: center;
@@ -1295,6 +1310,7 @@
   <section class="section visible" id="section-input" aria-labelledby="input-heading">
     <div class="card">
       <label class="field-label" for="rawPrompt">Your prompt</label>
+      <div id="followUpNote" class="follow-up-note" hidden></div>
       <textarea
         id="rawPrompt"
         placeholder="Design a dashboard with charts, needs user preferences, dark mode..."
@@ -1446,6 +1462,7 @@
       <div id="modelSuggestion" class="model-suggestion" aria-live="polite"></div>
       <div class="btn-group" style="margin-top:20px;">
         <button class="btn btn-primary" id="newBtn">Start over</button>
+        <button class="btn btn-secondary" id="followUpBtn">Continue with follow-up</button>
         <button class="btn btn-secondary" id="shareBtn">Copy share link</button>
       </div>
     </div>
@@ -1477,6 +1494,7 @@
   let isAnalyzing = false;
   let isCompiling = false;
   let currentHistoryId = null;
+  let pendingParentId = null;
 
   const API_URL = '/api/generate';
 
@@ -1564,26 +1582,36 @@
       return a.localeCompare(b);
     });
 
+    const renderItem = (e, isChild) => {
+      const scoreClass = e.score >= 70 ? 'high' : '';
+      const displayText = e.brief || e.prompt;
+      const snippet = displayText.length > 80 ? displayText.slice(0, 80) + '…' : displayText;
+      const date = new Date(e.date);
+      const timeAgo = formatTimeAgo(date);
+      return `
+        <div class="sidebar-item${isChild ? ' child' : ''}" data-id="${e.id}" role="button" tabindex="0" aria-label="Load prompt: ${escapeHtml(snippet)}">
+          <div class="sidebar-item-score ${scoreClass}">${e.score || '—'}</div>
+          <div class="sidebar-item-text">
+            <div class="sidebar-item-prompt">${escapeHtml(snippet)}</div>
+            <div class="sidebar-item-meta">
+              <span>${timeAgo}</span>
+              ${isChild ? `<span class="sidebar-item-tag">↳ follow-up</span>` : ''}
+              ${e.tag ? `<span class="sidebar-item-tag">${escapeHtml(e.tag)}</span>` : ''}
+            </div>
+          </div>
+          <button class="sidebar-item-delete" data-delete="${e.id}" aria-label="Delete entry" title="Delete">&times;</button>
+        </div>`;
+    };
+
     tagOrder.forEach(tag => {
       html += `<div class="sidebar-group-label">${escapeHtml(tag)}</div>`;
+      const inGroup = new Set(grouped[tag].map(e => e.id));
       grouped[tag].forEach(e => {
-        const scoreClass = e.score >= 70 ? 'high' : '';
-        const displayText = e.brief || e.prompt;
-        const snippet = displayText.length > 80 ? displayText.slice(0, 80) + '…' : displayText;
-        const date = new Date(e.date);
-        const timeAgo = formatTimeAgo(date);
-        html += `
-          <div class="sidebar-item" data-id="${e.id}" role="button" tabindex="0" aria-label="Load prompt: ${escapeHtml(snippet)}">
-            <div class="sidebar-item-score ${scoreClass}">${e.score || '—'}</div>
-            <div class="sidebar-item-text">
-              <div class="sidebar-item-prompt">${escapeHtml(snippet)}</div>
-              <div class="sidebar-item-meta">
-                <span>${timeAgo}</span>
-                ${e.tag ? `<span class="sidebar-item-tag">${escapeHtml(e.tag)}</span>` : ''}
-              </div>
-            </div>
-            <button class="sidebar-item-delete" data-delete="${e.id}" aria-label="Delete entry" title="Delete">&times;</button>
-          </div>`;
+        if (e.parentId && inGroup.has(e.parentId)) return; // rendered nested below
+        html += renderItem(e, false);
+        grouped[tag]
+          .filter(c => c.parentId === e.id)
+          .forEach(c => { html += renderItem(c, true); });
       });
     });
     body.innerHTML = html;
@@ -1619,6 +1647,8 @@
     const entry = loadHistory().find(e => e.id === id);
     if (!entry) return;
     currentHistoryId = entry.id;
+    pendingParentId = null;
+    const fun = $('followUpNote'); if (fun) fun.hidden = true;
     $('rawPrompt').value = entry.prompt;
     if (entry.example) $('exampleInput').value = entry.example;
     if (entry.tag && $('tagInput')) $('tagInput').value = entry.tag;
@@ -2352,6 +2382,16 @@ Prompt to analyze: "${promptText}"`,
       questionsSummary = '(none — the original prompt was already detailed, no clarification needed)';
     }
 
+    let priorBlock = '';
+    let continuityReq = '';
+    if (pendingParentId) {
+      const parent = loadHistory().find(e => e.id === pendingParentId);
+      if (parent && parent.brief) {
+        priorBlock = `<prior_context>\n${parent.brief}\n</prior_context>\n`;
+        continuityReq = '- Continuity: this is a follow-up to the brief in <prior_context>. Build on it — reference its screens, states, and decisions by name and stay consistent with them. Do not repeat content already covered; specify only what is new or changed in <original_request> and <clarifications>.\n';
+      }
+    }
+
     const optimizePrompt = `Generate an optimized UI/UX design prompt for Claude Code prototyping. Return ONLY the optimized prompt text, structured with XML tags exactly as specified below.
 
 <original_request>
@@ -2361,11 +2401,11 @@ Prompt to analyze: "${promptText}"`,
 <clarifications>
 ${questionsSummary}
 </clarifications>
-${exampleBlock}
+${priorBlock}${exampleBlock}
 
 Requirements for the optimized prompt:
 - Structure it with these XML sections in order: <role>, <goal>, <context>, <constraints>, <scope>, <acceptance_criteria>, <output_format>.
-- <role>: one line setting Claude Code as a senior product designer building a clickable prototype.
+${continuityReq}- <role>: one line setting Claude Code as a senior product designer building a clickable prototype.
 - <goal>: what to design, in one specific paragraph incorporating the original request and clarifications.
 - <context>: visual intent (layout, style, color approach), interaction patterns and user behaviors, content hierarchy and information architecture, experience flow (navigation, states, transitions).
 - <constraints>: prominent bulleted "Do NOT" list — prototype only, no technology/code/backend, no redesigning unnamed screens. Constraints must be bullets, never buried in prose.
@@ -2377,7 +2417,7 @@ ${imageReq}
 - Self-contained: the brief must stand alone with no references to prior conversation.
 - Replace vague verbs from the original request ("improve", "polish", "modern") with concrete visual/interaction specs — never carry them into the brief.
 - Order the build in phases in <output_format>: 1) structure/layout, 2) styling/polish, 3) interactions and states — each verifiable against <acceptance_criteria>.
-- Output only the seven brief sections — do not echo <original_request> or <clarifications>, do not wrap in code fences, no extra wrapper tags.
+- Output only the seven brief sections — do not echo <original_request>, <clarifications> or <prior_context>, do not wrap in code fences, no extra wrapper tags.
 - Keep it tight: ~250 words max, bullets over paragraphs (token-efficient output).
 - Focus entirely on the user interface and user experience, not on technology, code, or implementation.
 
@@ -2427,9 +2467,12 @@ Return ONLY the optimized prompt. Do not add any introductory text, comments, or
         score: analysisResult.overall,
         suggestedModel: modelInfo.model,
         modelReason: modelInfo.reason,
+        parentId: pendingParentId,
         date: new Date().toISOString(),
         answers: answers.slice()
       });
+      pendingParentId = null;
+      $('followUpNote').hidden = true;
       if (repairFixed > 0) {
         const rn = $('repairNote');
         rn.textContent = `Auto-repair fixed ${repairFixed} check${repairFixed === 1 ? '' : 's'} — review the checklist below.`;
@@ -2471,9 +2514,12 @@ Return ONLY the optimized prompt. Do not add any introductory text, comments, or
         score: analysisResult ? analysisResult.overall : 0,
         suggestedModel: fallbackModelInfo.model,
         modelReason: fallbackModelInfo.reason,
+        parentId: pendingParentId,
         date: new Date().toISOString(),
         answers: answers.slice()
       });
+      pendingParentId = null;
+      $('followUpNote').hidden = true;
     }
 
     isCompiling = false;
@@ -2696,6 +2742,8 @@ Return all screens in scope, all states, plus a short note listing assumptions m
     answers = [];
     analysisResult = null;
     currentHistoryId = null;
+    pendingParentId = null;
+    const fun = $('followUpNote'); if (fun) fun.hidden = true;
     scoreHistory = [];
     lastAnalysisCache = { hash: null, result: null };
     $('deltaPanel').hidden = true;
@@ -2825,6 +2873,26 @@ Return all screens in scope, all states, plus a short note listing assumptions m
   $('compileBtn').addEventListener('click', generateOptimizedPrompt);
   $('copyBtn').addEventListener('click', copyPrompt);
   $('newBtn').addEventListener('click', resetApp);
+  $('followUpBtn').addEventListener('click', () => {
+    const parent = currentHistoryId ? loadHistory().find(e => e.id === currentHistoryId) : null;
+    if (!parent || !parent.brief) {
+      showToast('Compile a prompt first to continue from it.');
+      return;
+    }
+    pendingParentId = parent.id;
+    $('rawPrompt').value = '';
+    $('exampleInput').value = '';
+    clearRefImage();
+    updateCharCount();
+    const note = $('followUpNote');
+    const parentSnippet = (parent.brief.length > 90 ? parent.brief.slice(0, 90) + '…' : parent.brief);
+    note.innerHTML = `Continuing from: <i>${escapeHtml(parentSnippet)}</i> — RedPen remembers this context when compiling.`;
+    note.hidden = false;
+    try { window.history.replaceState(null, '', window.location.pathname); } catch (e) { /* non-fatal */ }
+    showSection('section-input');
+    $('rawPrompt').focus();
+    showToast('Write your follow-up — prior context will be included.');
+  });
   $('shareBtn').addEventListener('click', async () => {
     if (!currentHistoryId) {
       showToast('Compile a prompt first to share it.');
